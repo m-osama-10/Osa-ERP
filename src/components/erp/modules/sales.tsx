@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, ShoppingCart, FileText, Receipt, Trash2, Printer } from 'lucide-react'
+import { Plus, ShoppingCart, FileText, Receipt, Trash2, Printer, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Invoice = {
@@ -265,8 +265,25 @@ function POS() {
   const [items, setItems] = React.useState<{ id: string; name: string; sku: string; salePrice: number; qtyOnHand: number; category?: { name: string } | null }[]>([])
   const [cart, setCart] = React.useState<{ id: string; name: string; price: number; qty: number }[]>([])
   const [search, setSearch] = React.useState('')
+  const [completing, setCompleting] = React.useState(false)
 
   React.useEffect(() => { fetch('/api/items').then(r => r.json()).then(setItems) }, [])
+
+  // Get or create a walk-in customer for POS sales
+  const getWalkInCustomer = async () => {
+    const res = await fetch('/api/customers')
+    const customers = await res.json()
+    let walkIn = customers.find((c: any) => c.code === 'C-WALK')
+    if (!walkIn) {
+      const createRes = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'C-WALK', name: 'عميل نقطة البيع', nameEn: 'Walk-in Customer', type: 'INDIVIDUAL' })
+      })
+      walkIn = await createRes.json()
+    }
+    return walkIn
+  }
 
   const filtered = items.filter(i => i.name.includes(search) || i.sku.toLowerCase().includes(search.toLowerCase()))
   const subtotal = cart.reduce((s, c) => s + c.price * c.qty, 0)
@@ -341,8 +358,38 @@ function POS() {
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'المجموع' : 'Subtotal'}</span><span>{formatCurrency(subtotal)}</span></div>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT 15%</span><span>{formatCurrency(tax)}</span></div>
           <div className="flex justify-between text-lg font-bold border-t border-border pt-2"><span>{t(lang, 'total')}</span><span className="text-primary">{formatCurrency(total)}</span></div>
-          <Button className="w-full h-12 mt-2 text-base" disabled={cart.length === 0} onClick={() => { toast.success(lang === 'ar' ? 'تم إنشاء البيع' : 'Sale completed'); setCart([]) }}>
-            <Printer className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'إتمام البيع' : 'Complete Sale'}
+          <Button className="w-full h-12 mt-2 text-base" disabled={cart.length === 0 || completing} onClick={async () => {
+            if (completing) return
+            setCompleting(true)
+            try {
+              // Find or create a walk-in customer
+              let walkIn = await getWalkInCustomer()
+              const res = await fetch('/api/invoices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  customerId: walkIn.id,
+                  date: new Date().toISOString(),
+                  type: 'POS',
+                  paidAmount: total, // POS = paid immediately
+                  items: cart.map(c => ({ itemId: c.id, quantity: c.qty, price: c.price, total: c.price * c.qty })),
+                })
+              })
+              if (res.ok) {
+                const inv = await res.json()
+                toast.success(lang === 'ar' ? `تم البيع - ${inv.invoiceNo}` : `Sale completed - ${inv.invoiceNo}`)
+                setCart([])
+              } else {
+                const err = await res.json()
+                toast.error(err.error || (lang === 'ar' ? 'فشل البيع' : 'Sale failed'))
+              }
+            } catch (e: any) {
+              toast.error(lang === 'ar' ? 'خطأ في الاتصال' : 'Connection error')
+            } finally {
+              setCompleting(false)
+            }
+          }}>
+            {completing ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Printer className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'إتمام البيع' : 'Complete Sale'}</>}
           </Button>
         </div>
       </Card>

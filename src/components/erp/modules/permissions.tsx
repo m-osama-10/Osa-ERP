@@ -367,19 +367,13 @@ function RolesTab() {
 function AuditTab() {
   const { lang } = useApp()
   const [logs, setLogs] = React.useState<AuditLog[]>([])
+  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    // Use existing audit logs from database via users endpoint (or fake data for now)
-    fetch('/api/users').then(r => r.json()).then(() => {
-      // Demo audit logs (in production, fetch from /api/audit-logs)
-      setLogs([
-        { id: '1', action: 'تسجيل دخول', module: 'النظام', details: 'تسجيل دخول ناجح', ipAddress: '197.45.21.8', createdAt: new Date(Date.now() - 3600000).toISOString(), user: { name: 'المدير العام', email: 'admin@osa-erp.com' } },
-        { id: '2', action: 'إنشاء فاتورة', module: 'المبيعات', details: 'فاتورة INV-01042 بقيمة 4,560', ipAddress: '197.45.21.8', createdAt: new Date(Date.now() - 7200000).toISOString(), user: { name: 'مسؤول المبيعات', email: 'sales@osa-erp.com' } },
-        { id: '3', action: 'تعديل حساب', module: 'المحاسبة', details: 'تعديل رصيد حساب 1101', ipAddress: '197.45.21.9', createdAt: new Date(Date.now() - 10800000).toISOString(), user: { name: 'المحاسب', email: 'accountant@osa-erp.com' } },
-        { id: '4', action: 'حذف صنف', module: 'المخازن', details: 'حذف صنف ITM-099', ipAddress: '197.45.21.8', createdAt: new Date(Date.now() - 86400000).toISOString(), user: { name: 'المدير العام', email: 'admin@osa-erp.com' } },
-        { id: '5', action: 'تسجيل خروج', module: 'النظام', details: null, ipAddress: '197.45.21.9', createdAt: new Date(Date.now() - 172800000).toISOString(), user: { name: 'المحاسب', email: 'accountant@osa-erp.com' } },
-      ])
-    })
+    fetch('/api/audit-logs?limit=100')
+      .then(r => r.json())
+      .then(d => { setLogs(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
   return (

@@ -35,33 +35,33 @@ async function main() {
   const branch1 = await db.branch.create({ data: { companyId: company.id, name: 'الفرع الرئيسي', code: 'BR-01', address: 'القاهرة - مدينة نصر', phone: '022345678' } })
   const branch2 = await db.branch.create({ data: { companyId: company.id, name: 'فرع الإسكندرية', code: 'BR-02', address: 'الإسكندرية - سموحة', phone: '034567890' } })
 
-  // ============== Chart of Accounts ==============
+  // ============== Chart of Accounts (with subtype) ==============
   const accounts = [
-    { code: '1000', name: 'الأصول', nameEn: 'Assets', type: 'ASSET' },
-    { code: '1100', name: 'الأصول المتداولة', nameEn: 'Current Assets', type: 'ASSET', parent: '1000' },
-    { code: '1101', name: 'النقدية والبنوك', nameEn: 'Cash & Banks', type: 'ASSET', parent: '1100' },
-    { code: '1102', name: 'الذمم المدينة', nameEn: 'Accounts Receivable', type: 'ASSET', parent: '1100' },
-    { code: '1103', name: 'المخزون', nameEn: 'Inventory', type: 'ASSET', parent: '1100' },
-    { code: '1200', name: 'الأصول الثابتة', nameEn: 'Fixed Assets', type: 'ASSET', parent: '1000' },
-    { code: '1201', name: 'المباني', nameEn: 'Buildings', type: 'ASSET', parent: '1200' },
-    { code: '1202', name: 'المعدات', nameEn: 'Equipment', type: 'ASSET', parent: '1200' },
-    { code: '2000', name: 'الخصوم', nameEn: 'Liabilities', type: 'LIABILITY' },
-    { code: '2100', name: 'الخصوم المتداولة', nameEn: 'Current Liabilities', type: 'LIABILITY', parent: '2000' },
-    { code: '2101', name: 'الذمم الدائنة', nameEn: 'Accounts Payable', type: 'LIABILITY', parent: '2100' },
-    { code: '2102', name: 'ضريبة القيمة المضافة', nameEn: 'VAT Payable', type: 'LIABILITY', parent: '2100' },
-    { code: '2200', name: 'القروض طويلة الأجل', nameEn: 'Long-term Loans', type: 'LIABILITY', parent: '2000' },
-    { code: '3000', name: 'حقوق الملكية', nameEn: 'Equity', type: 'EQUITY' },
-    { code: '3100', name: 'رأس المال', nameEn: 'Capital', type: 'EQUITY', parent: '3000' },
-    { code: '3200', name: 'الأرباح المحتجزة', nameEn: 'Retained Earnings', type: 'EQUITY', parent: '3000' },
-    { code: '4000', name: 'الإيرادات', nameEn: 'Revenue', type: 'REVENUE' },
-    { code: '4100', name: 'مبيعات', nameEn: 'Sales', type: 'REVENUE', parent: '4000' },
-    { code: '4200', name: 'إيرادات أخرى', nameEn: 'Other Income', type: 'REVENUE', parent: '4000' },
-    { code: '5000', name: 'المصروفات', nameEn: 'Expenses', type: 'EXPENSE' },
-    { code: '5100', name: 'تكلفة البضاعة المباعة', nameEn: 'COGS', type: 'EXPENSE', parent: '5000' },
-    { code: '5200', name: 'الرواتب والأجور', nameEn: 'Salaries', type: 'EXPENSE', parent: '5000' },
-    { code: '5300', name: 'الإيجارات', nameEn: 'Rent', type: 'EXPENSE', parent: '5000' },
-    { code: '5400', name: 'المرافق', nameEn: 'Utilities', type: 'EXPENSE', parent: '5000' },
-    { code: '5500', name: 'التسويق', nameEn: 'Marketing', type: 'EXPENSE', parent: '5000' },
+    { code: '1000', name: 'الأصول', nameEn: 'Assets', type: 'ASSET', subtype: null },
+    { code: '1100', name: 'الأصول المتداولة', nameEn: 'Current Assets', type: 'ASSET', subtype: 'CURRENT', parent: '1000' },
+    { code: '1101', name: 'النقدية والبنوك', nameEn: 'Cash & Banks', type: 'ASSET', subtype: 'CASH', parent: '1100' },
+    { code: '1102', name: 'الذمم المدينة', nameEn: 'Accounts Receivable', type: 'ASSET', subtype: 'AR', parent: '1100' },
+    { code: '1103', name: 'المخزون', nameEn: 'Inventory', type: 'ASSET', subtype: 'INVENTORY', parent: '1100' },
+    { code: '1200', name: 'الأصول الثابتة', nameEn: 'Fixed Assets', type: 'ASSET', subtype: 'FIXED', parent: '1000' },
+    { code: '1201', name: 'المباني', nameEn: 'Buildings', type: 'ASSET', subtype: 'FIXED', parent: '1200' },
+    { code: '1202', name: 'المعدات', nameEn: 'Equipment', type: 'ASSET', subtype: 'FIXED', parent: '1200' },
+    { code: '2000', name: 'الخصوم', nameEn: 'Liabilities', type: 'LIABILITY', subtype: null },
+    { code: '2100', name: 'الخصوم المتداولة', nameEn: 'Current Liabilities', type: 'LIABILITY', subtype: 'CURRENT', parent: '2000' },
+    { code: '2101', name: 'الذمم الدائنة', nameEn: 'Accounts Payable', type: 'LIABILITY', subtype: 'AP', parent: '2100' },
+    { code: '2102', name: 'ضريبة القيمة المضافة', nameEn: 'VAT Payable', type: 'LIABILITY', subtype: 'VAT', parent: '2100' },
+    { code: '2200', name: 'القروض طويلة الأجل', nameEn: 'Long-term Loans', type: 'LIABILITY', subtype: 'LONG_TERM', parent: '2000' },
+    { code: '3000', name: 'حقوق الملكية', nameEn: 'Equity', type: 'EQUITY', subtype: null },
+    { code: '3100', name: 'رأس المال', nameEn: 'Capital', type: 'EQUITY', subtype: 'CAPITAL', parent: '3000' },
+    { code: '3200', name: 'الأرباح المحتجزة', nameEn: 'Retained Earnings', type: 'EQUITY', subtype: 'RETAINED', parent: '3000' },
+    { code: '4000', name: 'الإيرادات', nameEn: 'Revenue', type: 'REVENUE', subtype: null },
+    { code: '4100', name: 'مبيعات', nameEn: 'Sales', type: 'REVENUE', subtype: 'SALES', parent: '4000' },
+    { code: '4200', name: 'إيرادات أخرى', nameEn: 'Other Income', type: 'REVENUE', subtype: 'OTHER_INCOME', parent: '4000' },
+    { code: '5000', name: 'المصروفات', nameEn: 'Expenses', type: 'EXPENSE', subtype: null },
+    { code: '5100', name: 'تكلفة البضاعة المباعة', nameEn: 'COGS', type: 'EXPENSE', subtype: 'COGS', parent: '5000' },
+    { code: '5200', name: 'الرواتب والأجور', nameEn: 'Salaries', type: 'EXPENSE', subtype: 'OPERATING', parent: '5000' },
+    { code: '5300', name: 'الإيجارات', nameEn: 'Rent', type: 'EXPENSE', subtype: 'OPERATING', parent: '5000' },
+    { code: '5400', name: 'المرافق', nameEn: 'Utilities', type: 'EXPENSE', subtype: 'OPERATING', parent: '5000' },
+    { code: '5500', name: 'التسويق', nameEn: 'Marketing', type: 'EXPENSE', subtype: 'OPERATING', parent: '5000' },
   ]
 
   const accountMap: Record<string, string> = {}
@@ -72,6 +72,7 @@ async function main() {
         name: a.name,
         nameEn: a.nameEn,
         type: a.type,
+        subtype: a.subtype,
         parentId: a.parent ? accountMap[a.parent] : null,
         balance: ['1101', '1102', '1103', '1201', '1202', '2101', '2102', '3100', '4100', '5200', '5300', '5400'].includes(a.code) ? Math.floor(Math.random() * 500000) + 50000 : 0,
       },
@@ -250,10 +251,10 @@ async function main() {
     })
   }
 
-  // ============== Users with hashed passwords ==============
-  const adminPass = await bcrypt.hash('admin123', 10)
-  const accPass = await bcrypt.hash('acc123', 10)
-  const salesPass = await bcrypt.hash('sales123', 10)
+  // ============== Users with hashed passwords (strong passwords) ==============
+  const adminPass = await bcrypt.hash('Admin@123', 10)
+  const accPass = await bcrypt.hash('Account@123', 10)
+  const salesPass = await bcrypt.hash('Sales@123', 10)
 
   // All permissions for admin
   const allPerms = JSON.stringify([
@@ -294,10 +295,10 @@ async function main() {
   await db.costCenter.create({ data: { code: 'CC-03', name: 'المشتريات' } })
   await db.costCenter.create({ data: { code: 'CC-04', name: 'الموارد البشرية' } })
 
-  console.log('✅ Seed v2 completed!')
-  console.log('   Login: admin@osa-erp.com / admin123')
-  console.log('   Login: accountant@osa-erp.com / acc123')
-  console.log('   Login: sales@osa-erp.com / sales123')
+  console.log('✅ Seed v2.1 completed!')
+  console.log('   Login: admin@osa-erp.com / Admin@123')
+  console.log('   Login: accountant@osa-erp.com / Account@123')
+  console.log('   Login: sales@osa-erp.com / Sales@123')
 }
 
 main()

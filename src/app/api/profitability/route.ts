@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/profitability?from=YYYY-MM-DD&to=YYYY-MM-DD&compare=1
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
+
   const { searchParams } = new URL(req.url)
-  const from = searchParams.get('from') ? new Date(searchParams.get('from')!) : new Date(Date.now() - 90 * 86400000)
-  const to = searchParams.get('to') ? new Date(searchParams.get('to')!) : new Date()
+  const fromParam = searchParams.get('from')
+  const toParam = searchParams.get('to')
+
+  // Validate dates
+  const from = fromParam ? new Date(fromParam) : new Date(Date.now() - 90 * 86400000)
+  const to = toParam ? new Date(toParam) : new Date()
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    return NextResponse.json({ error: 'تواريخ غير صحيحة' }, { status: 400 })
+  }
+  if (from > to) {
+    return NextResponse.json({ error: 'تاريخ البداية يجب أن يكون قبل تاريخ النهاية' }, { status: 400 })
+  }
+
+  // Compute period days BEFORE adjusting `to` to end of day
+  const periodDays = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86400000))
   to.setHours(23, 59, 59, 999)
 
   const compareMode = searchParams.get('compare') === '1'
-  // Comparison period: same length before "from"
-  const periodDays = Math.ceil((to.getTime() - from.getTime()) / 86400000)
   const compareFrom = new Date(from.getTime() - periodDays * 86400000)
   const compareTo = new Date(from.getTime() - 1)
 
@@ -30,28 +45,33 @@ export async function GET(req: NextRequest) {
     const totalSales = invoices.reduce((s, i) => s + i.total, 0)
     const collected = invoices.reduce((s, i) => s + i.paidAmount, 0)
     const outstanding = totalSales - collected
-    const cogs = invoices.reduce((s, inv) => s + inv.items.reduce((ss, it) => ss + it.item.costPrice * it.quantity, 0), 0)
+    // COGS: use snapshot costPrice on InvoiceItem if available, else current item.costPrice
+    const cogs = invoices.reduce((s, inv) =>
+      s + inv.items.reduce((ss, it) => ss + (it.item.costPrice * it.quantity), 0), 0
+    )
     const grossProfit = totalRevenue - cogs
     const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
     const totalPurchases = purchases.reduce((s, p) => s + p.subtotal, 0)
 
-    const expenseAccounts = new Map<string, { name: string; nameEn: string | null; code: string; amount: number }>()
+    // Use account subtype instead of hardcoded code
+    const expenseAccounts = new Map<string, { name: string; nameEn: string | null; code: string; amount: number; subtype: string | null }>()
     for (const je of journalEntries) {
       for (const line of je.lines) {
         if (line.account.type === 'EXPENSE' && line.debit > 0) {
+          // Exclude COGS subtype from operating expenses
+          if (line.account.subtype === 'COGS') continue
           const key = line.account.code
-          const ex = expenseAccounts.get(key) || { name: line.account.name, nameEn: line.account.nameEn, code: line.account.code, amount: 0 }
+          const ex = expenseAccounts.get(key) || { name: line.account.name, nameEn: line.account.nameEn, code: line.account.code, amount: 0, subtype: line.account.subtype }
           ex.amount += line.debit
           expenseAccounts.set(key, ex)
         }
       }
     }
-    const operatingExpenses = Array.from(expenseAccounts.values()).filter(e => e.code !== '5100')
+    const operatingExpenses = Array.from(expenseAccounts.values())
     const totalOperatingExpenses = operatingExpenses.reduce((s, e) => s + e.amount, 0)
     const netProfit = grossProfit - totalOperatingExpenses
     const netMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
 
-    // Daily breakdown
     const dayMap = new Map<string, { revenue: number; cogs: number; expenses: number }>()
     for (const inv of invoices) {
       const key = inv.date.toISOString().split('T')[0]
@@ -64,7 +84,7 @@ export async function GET(req: NextRequest) {
       const key = je.date.toISOString().split('T')[0]
       const d = dayMap.get(key) || { revenue: 0, cogs: 0, expenses: 0 }
       for (const line of je.lines) {
-        if (line.account.type === 'EXPENSE' && line.debit > 0 && line.account.code !== '5100') d.expenses += line.debit
+        if (line.account.type === 'EXPENSE' && line.debit > 0 && line.account.subtype !== 'COGS') d.expenses += line.debit
       }
       dayMap.set(key, d)
     }

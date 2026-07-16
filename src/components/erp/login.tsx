@@ -9,15 +9,18 @@ import { Label } from '@/components/ui/label'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
+const isDev = process.env.NODE_ENV === 'development'
+
 export function Login() {
   const { lang, setUser } = useApp()
-  const [email, setEmail] = React.useState('admin@osa-erp.com')
-  const [password, setPassword] = React.useState('admin123')
+  const [email, setEmail] = React.useState('')
+  const [password, setPassword] = React.useState('')
   const [showPass, setShowPass] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return // prevent double-submit
     setLoading(true)
     try {
       const res = await fetch('/api/auth/login', {
@@ -72,6 +75,7 @@ export function Login() {
                   className="h-11"
                   style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36 } as React.CSSProperties}
                   dir="ltr"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -88,6 +92,7 @@ export function Login() {
                   className="h-11"
                   style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36, [lang === 'ar' ? 'paddingLeft' : 'paddingRight']: 36 } as React.CSSProperties}
                   dir="ltr"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -105,25 +110,27 @@ export function Login() {
             </Button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 rounded-xl bg-muted/50 p-4 text-xs">
-            <p className="font-semibold mb-2">{lang === 'ar' ? 'حسابات تجريبية:' : 'Demo accounts:'}</p>
-            <div className="space-y-1.5" dir="ltr">
-              <button onClick={() => { setEmail('admin@osa-erp.com'); setPassword('admin123') }} className="block w-full text-start hover:text-primary transition-colors">
-                👑 admin@osa-erp.com / admin123
-              </button>
-              <button onClick={() => { setEmail('accountant@osa-erp.com'); setPassword('acc123') }} className="block w-full text-start hover:text-primary transition-colors">
-                📊 accountant@osa-erp.com / acc123
-              </button>
-              <button onClick={() => { setEmail('sales@osa-erp.com'); setPassword('sales123') }} className="block w-full text-start hover:text-primary transition-colors">
-                💰 sales@osa-erp.com / sales123
-              </button>
+          {/* Demo credentials only in development */}
+          {isDev && (
+            <div className="mt-6 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-4 text-xs">
+              <p className="font-semibold mb-2 text-amber-700 dark:text-amber-400">⚠ {lang === 'ar' ? 'بيانات تجريبية (dev only)' : 'Demo (dev only)'}</p>
+              <div className="space-y-1.5" dir="ltr">
+                <button type="button" onClick={() => { setEmail('admin@osa-erp.com'); setPassword('Admin@123') }} className="block w-full text-start hover:text-primary transition-colors">
+                  👑 admin@osa-erp.com / Admin@123
+                </button>
+                <button type="button" onClick={() => { setEmail('accountant@osa-erp.com'); setPassword('Account@123') }} className="block w-full text-start hover:text-primary transition-colors">
+                  📊 accountant@osa-erp.com / Account@123
+                </button>
+                <button type="button" onClick={() => { setEmail('sales@osa-erp.com'); setPassword('Sales@123') }} className="block w-full text-start hover:text-primary transition-colors">
+                  💰 sales@osa-erp.com / Sales@123
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </Card>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Osa ERP © 2026 • v2.0.0
+          Osa ERP © {new Date().getFullYear()} • v2.1.0
         </p>
       </div>
     </div>

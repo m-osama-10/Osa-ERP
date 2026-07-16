@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth, requirePermission } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req)
+  if (auth instanceof NextResponse) return auth
   const company = await db.company.findFirst({ include: { branches: true } })
   if (!company) {
     return NextResponse.json({ name: 'Osa ERP', currency: 'EGP' })
@@ -21,6 +24,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requirePermission(req, 'settings.manage')
+  if (auth instanceof NextResponse) return auth
   const body = await req.json()
   const existing = await db.company.findFirst()
   let company
