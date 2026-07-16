@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { useApp } from '@/components/erp/app-context'
-import { Rocket, Calendar, Play, ArrowLeft, TrendingUp, Users, Building2, CheckCircle2, Sparkles } from 'lucide-react'
+import { Rocket, Calendar, Play, ArrowLeft, TrendingUp, Users, Building2, CheckCircle2, Sparkles, Lock, DollarSign } from 'lucide-react'
 
 function AnimatedCounter({ value, suffix = '', duration = 2000 }: { value: number; suffix?: string; duration?: number }) {
   const [count, setCount] = React.useState(0)
@@ -36,7 +36,7 @@ function AnimatedCounter({ value, suffix = '', duration = 2000 }: { value: numbe
 }
 
 export function Hero() {
-  const { lang, setUser } = useApp()
+  const { lang, setUser, setShowLogin } = useApp()
 
   const quickDemo = async () => {
     const res = await fetch('/api/auth/login', {
@@ -48,6 +48,10 @@ export function Hero() {
       const data = await res.json()
       setUser(data)
     }
+  }
+
+  const goLogin = () => {
+    setShowLogin(true)
   }
 
   return (
@@ -92,17 +96,20 @@ export function Hero() {
               : 'A complete ERP system with accounting, sales, inventory, and HR. Built with modern tech, secure, fast, and backed with EGP support and professional reports.'}
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-fade-in-up delay-200">
-            <Button onClick={quickDemo} size="lg" className="h-14 px-8 text-base btn-primary-gradient btn-ripple shadow-glow">
+          {/* CTA buttons — 3 buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 animate-fade-in-up delay-200">
+            <Button onClick={quickDemo} size="lg" className="h-14 px-6 text-base btn-primary-gradient btn-ripple shadow-glow">
               <Rocket className="h-5 w-5 ml-2" />
               {lang === 'ar' ? 'جرّب النسخة التجريبية' : 'Try Free Demo'}
-              <ArrowLeft className="h-4 w-4 ml-2 rtl:rotate-180" />
             </Button>
-            <Button variant="outline" size="lg" className="h-14 px-8 text-base glass hover:shadow-soft transition-all hover:scale-105" asChild>
-              <a href="#demo">
-                <Calendar className="h-5 w-5 ml-2" />
-                {lang === 'ar' ? 'احجز Demo' : 'Book a Demo'}
+            <Button variant="outline" size="lg" className="h-14 px-6 text-base glass hover:shadow-soft transition-all hover:scale-105 gap-2" onClick={goLogin}>
+              <Lock className="h-5 w-5" />
+              {lang === 'ar' ? 'تسجيل الدخول' : 'Login'}
+            </Button>
+            <Button variant="outline" size="lg" className="h-14 px-6 text-base glass hover:shadow-soft transition-all hover:scale-105 gap-2" asChild>
+              <a href="#pricing">
+                <DollarSign className="h-5 w-5" />
+                {lang === 'ar' ? 'اطلب عرض سعر' : 'Get Quote'}
               </a>
             </Button>
           </div>
@@ -127,38 +134,6 @@ export function Hero() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Dashboard mockup preview */}
-          <div className="mt-16 relative animate-fade-in-up delay-500">
-            <div className="absolute inset-x-0 -top-4 h-32 bg-gradient-to-b from-transparent to-background z-10 pointer-events-none" />
-            <div className="rounded-3xl glass-strong shadow-soft-xl overflow-hidden">
-              <div className="bg-muted/50 px-4 py-2.5 flex items-center gap-2 border-b border-border">
-                <div className="flex gap-1.5">
-                  <div className="h-3 w-3 rounded-full bg-red-400" />
-                  <div className="h-3 w-3 rounded-full bg-amber-400" />
-                  <div className="h-3 w-3 rounded-full bg-emerald-400" />
-                </div>
-                <div className="flex-1 text-center text-xs text-muted-foreground font-mono">osa-erp.com/dashboard</div>
-              </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-gradient-to-br from-primary/5 to-transparent">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="rounded-2xl glass border border-border p-4 card-lift">
-                    <div className="h-2 w-20 skeleton rounded mb-3" />
-                    <div className="h-8 w-24 skeleton rounded mb-2" />
-                    <div className="h-2 w-16 skeleton rounded" />
-                  </div>
-                ))}
-                <div className="md:col-span-4 rounded-2xl glass border border-border p-6 h-48">
-                  <div className="h-2 w-32 skeleton rounded mb-4" />
-                  <div className="flex items-end gap-2 h-32">
-                    {[40, 65, 50, 80, 70, 95, 85, 60, 75].map((h, i) => (
-                      <div key={i} className="flex-1 rounded-t-lg gradient-accent transition-all hover:opacity-80" style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Made in Egypt badge */}

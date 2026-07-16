@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 type Mode = 'login' | 'forgot' | 'reset'
 
 export function Login() {
-  const { lang, setUser } = useApp()
+  const { lang, setUser, setShowLogin } = useApp()
   const [mode, setMode] = React.useState<Mode>('login')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -225,18 +225,55 @@ export function Login() {
                 </button>
               )}
 
-              {/* Demo credentials */}
+              {/* Back to landing */}
               {mode === 'login' && (
-                <div className="mt-6 rounded-2xl glass p-4 text-xs">
-                  <p className="font-bold mb-2 text-primary flex items-center gap-1">
+                <button onClick={() => setShowLogin(false)} className="mt-4 text-sm text-muted-foreground hover:text-primary transition-colors block w-full text-center">
+                  {lang === 'ar' ? '← العودة للرئيسية' : '← Back to home'}
+                </button>
+              )}
+
+              {/* Demo credentials + Guest button */}
+              {mode === 'login' && (
+                <div className="mt-6 rounded-2xl glass p-4">
+                  <p className="font-bold mb-3 text-primary flex items-center gap-1.5 text-sm">
                     <span className="h-2 w-2 rounded-full gradient-accent animate-pulse-glow" />
-                    {lang === 'ar' ? 'حساب تجريبي للزوار' : 'Demo Account'}
+                    {lang === 'ar' ? 'الدخول بحساب Demo' : 'Login as Demo'}
                   </p>
-                  <button type="button" onClick={() => { setEmail('demo@osaerp.com'); setPassword('Demo@123') }}
-                    className="block w-full text-start hover:text-primary transition-colors p-2 rounded-lg hover:bg-muted/50 font-mono" dir="ltr">
-                    👤 demo@osaerp.com / Demo@123
-                  </button>
-                  <p className="mt-2 text-[10px] text-muted-foreground">
+                  <div className="space-y-1 mb-3 text-xs text-muted-foreground">
+                    <div className="flex justify-between"><span>{lang === 'ar' ? 'البريد' : 'Email'}:</span><span className="font-mono" dir="ltr">demo@osaerp.com</span></div>
+                    <div className="flex justify-between"><span>{lang === 'ar' ? 'كلمة المرور' : 'Password'}:</span><span className="font-mono" dir="ltr">Demo@123</span></div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11 btn-ripple gap-2"
+                    onClick={async () => {
+                      setLoading(true)
+                      try {
+                        const res = await fetch('/api/auth/login', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: 'demo@osaerp.com', password: 'Demo@123' }),
+                        })
+                        const data = await res.json()
+                        if (res.ok) {
+                          setUser(data)
+                          toast.success(lang === 'ar' ? `أهلاً ${data.name}` : `Welcome ${data.name}`)
+                        } else {
+                          toast.error(data.error || 'Error')
+                        }
+                      } catch {
+                        toast.error(lang === 'ar' ? 'خطأ في الاتصال' : 'Connection error')
+                      } finally {
+                        setLoading(false)
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {lang === 'ar' ? '🚀 الدخول كضيف (Demo)' : '🚀 Login as Guest (Demo)'}
+                  </Button>
+                  <p className="mt-2 text-[10px] text-muted-foreground text-center">
                     {lang === 'ar' ? 'هذا الحساب للتجربة فقط — البيانات تُعاد ضبطها دورياً' : 'Demo only — data resets periodically'}
                   </p>
                 </div>

@@ -7,36 +7,62 @@ import { Button } from '@/components/ui/button'
 import {
   Check, X, ShoppingCart, FileText, Package, Users, BarChart3,
   ShieldCheck, RefreshCw, Sparkles, Headphones, Globe, Crown,
-  Calendar, Info, Building2, Wallet, Star,
+  Info, Building2, Wallet, Star, Zap,
 } from 'lucide-react'
 
 export function Pricing() {
   const { lang } = useApp()
 
-  const monthlyPrice = '417'
-  const yearlyPrice = '4,999'
+  // Two plans: Standard + Enterprise (yearly only)
+  const plans = [
+    {
+      name_ar: 'Standard',
+      name_en: 'Standard',
+      desc_ar: 'للشركات الصغيرة والمتوسطة',
+      desc_en: 'For small & medium businesses',
+      icon: Sparkles,
+      color: 'border-blue-500',
+      iconBg: 'bg-blue-500',
+      features_ar: 'كل ما تحتاجه لإدارة أعمالك بكفاءة',
+      features_en: 'Everything you need to manage your business',
+      popular: false,
+    },
+    {
+      name_ar: 'Enterprise',
+      name_en: 'Enterprise',
+      desc_ar: 'للشركات الكبيرة والمؤسسات',
+      desc_en: 'For large companies & enterprises',
+      icon: Crown,
+      color: 'border-primary ring-2 ring-primary',
+      iconBg: 'gradient-primary',
+      features_ar: 'حلول متقدمة + دعم مخصص + خادم منفصل',
+      features_en: 'Advanced solutions + dedicated support + separate server',
+      popular: true,
+    },
+  ]
 
   const comparisonFeatures = [
-    { icon: ShoppingCart, ar: 'إدارة المبيعات والفواتير', en: 'Sales & Invoices', starter: true, pro: true, ent: true },
-    { icon: FileText, ar: 'إدارة المشتريات', en: 'Purchases', starter: true, pro: true, ent: true },
-    { icon: Package, ar: 'إدارة المخازن', en: 'Inventory', starter: true, pro: true, ent: true },
-    { icon: Users, ar: 'إدارة العملاء (CRM)', en: 'Customers (CRM)', starter: true, pro: true, ent: true },
-    { icon: BarChart3, ar: 'إدارة الحسابات والتقارير', en: 'Accounts & Reports', starter: true, pro: true, ent: true },
-    { icon: ShieldCheck, ar: 'إدارة المستخدمين والصلاحيات', en: 'Users & Permissions', starter: true, pro: true, ent: true },
-    { icon: RefreshCw, ar: 'نسخ احتياطي دوري', en: 'Periodic Backups', starter: true, pro: true, ent: true },
-    { icon: Sparkles, ar: 'تحديثات مجانية', en: 'Free Updates', starter: true, pro: true, ent: true },
-    { icon: Headphones, ar: 'دعم فني', en: 'Tech Support', starter: 'email', pro: 'priority', ent: 'dedicated' },
-    { icon: Globe, ar: 'دومين مجاني (Vercel)', en: 'Free Domain (Vercel)', starter: true, pro: true, ent: true },
-    { icon: Crown, ar: 'دومين احترافي (.com)', en: 'Professional Domain', starter: false, pro: '700 EGP', ent: true },
-    { icon: Users, ar: 'عدد المستخدمين', en: 'Users', starter: '3', pro: 'unlimited', ent: 'unlimited' },
-    { icon: Building2, ar: 'عدد الفروع', en: 'Branches', starter: '1', pro: '5', ent: 'unlimited' },
-    { icon: Wallet, ar: 'نقطة البيع (POS)', en: 'POS', starter: false, pro: true, ent: true },
-    { icon: Users, ar: 'الموارد البشرية (HR)', en: 'HR Module', starter: false, pro: true, ent: true },
-    { icon: BarChart3, ar: 'تقارير الربحية', en: 'Profitability Reports', starter: false, pro: true, ent: true },
-    { icon: FileText, ar: 'تصدير PDF و Excel', en: 'PDF & Excel Export', starter: 'basic', pro: true, ent: true },
-    { icon: Globe, ar: 'API كامل', en: 'Full API', starter: false, pro: false, ent: true },
-    { icon: Crown, ar: 'خادم مخصص', en: 'Dedicated Server', starter: false, pro: false, ent: true },
-    { icon: Star, ar: 'تدريب الفريق', en: 'Team Training', starter: false, pro: false, ent: true },
+    { icon: ShoppingCart, ar: 'إدارة المبيعات والفواتير', en: 'Sales & Invoices', standard: true, enterprise: true },
+    { icon: FileText, ar: 'إدارة المشتريات', en: 'Purchases', standard: true, enterprise: true },
+    { icon: Package, ar: 'إدارة المخازن', en: 'Inventory', standard: true, enterprise: true },
+    { icon: Users, ar: 'إدارة العملاء (CRM)', en: 'Customers (CRM)', standard: true, enterprise: true },
+    { icon: BarChart3, ar: 'إدارة الحسابات والتقارير', en: 'Accounts & Reports', standard: true, enterprise: true },
+    { icon: ShieldCheck, ar: 'إدارة المستخدمين والصلاحيات', en: 'Users & Permissions', standard: true, enterprise: true },
+    { icon: RefreshCw, ar: 'نسخ احتياطي دوري', en: 'Periodic Backups', standard: true, enterprise: true },
+    { icon: Sparkles, ar: 'تحديثات مجانية', en: 'Free Updates', standard: true, enterprise: true },
+    { icon: Headphones, ar: 'دعم فني', en: 'Tech Support', standard: 'email', enterprise: 'dedicated 24/7' },
+    { icon: Globe, ar: 'دومين مجاني (Vercel)', en: 'Free Domain (Vercel)', standard: true, enterprise: true },
+    { icon: Crown, ar: 'دومين احترافي (.com)', en: 'Professional Domain', standard: '700 EGP', enterprise: true },
+    { icon: Users, ar: 'عدد المستخدمين', en: 'Users', standard: 'حتى 10', enterprise: 'غير محدود' },
+    { icon: Building2, ar: 'عدد الفروع', en: 'Branches', standard: 'حتى 3', enterprise: 'غير محدود' },
+    { icon: Wallet, ar: 'نقطة البيع (POS)', en: 'POS', standard: true, enterprise: true },
+    { icon: Users, ar: 'الموارد البشرية (HR)', en: 'HR Module', standard: true, enterprise: true },
+    { icon: BarChart3, ar: 'تقارير الربحية', en: 'Profitability Reports', standard: true, enterprise: true },
+    { icon: FileText, ar: 'تصدير PDF و Excel', en: 'PDF & Excel Export', standard: true, enterprise: true },
+    { icon: Globe, ar: 'API كامل', en: 'Full API', standard: false, enterprise: true },
+    { icon: Crown, ar: 'خادم مخصص (Dedicated)', en: 'Dedicated Server', standard: false, enterprise: true },
+    { icon: Star, ar: 'تدريب الفريق', en: 'Team Training', standard: false, enterprise: true },
+    { icon: Zap, ar: 'SLA 99.9%', en: 'SLA 99.9%', standard: false, enterprise: true },
   ]
 
   const renderValue = (val: any) => {
@@ -45,6 +71,14 @@ export function Pricing() {
     return <span className="text-xs font-bold">{val}</span>
   }
 
+  const terms = [
+    { ar: 'الاشتراك يُدفع مقدمًا ويُجدد سنويًا.', en: 'Subscription is paid in advance and renewed yearly.' },
+    { ar: 'يشمل الاشتراك الاستضافة والتحديثات والدعم الفني طوال مدة الاشتراك.', en: 'Includes hosting, updates, and tech support during subscription.' },
+    { ar: 'في حالة اختيار دومين احترافي، يتحمل العميل رسوم تجديد الدومين بعد السنة الأولى.', en: 'Professional domain renewal after first year at registrar rate.' },
+    { ar: 'في حالة استخدام الدومين المجاني (Vercel)، لا توجد رسوم دومين.', en: 'Free Vercel domain has no domain fees.' },
+    { ar: 'لا يتم استرداد قيمة الاشتراك بعد تفعيل الخدمة.', en: 'Non-refundable after activation.' },
+  ]
+
   return (
     <section id="pricing" className="py-20 lg:py-32 relative overflow-hidden">
       <div className="absolute inset-0 -z-10 gradient-mesh opacity-50" />
@@ -52,61 +86,46 @@ export function Pricing() {
         <div className="max-w-3xl mx-auto text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full glass border border-primary/30 px-4 py-1.5 text-sm font-semibold text-primary mb-6 animate-fade-in-down">
             <Crown className="h-4 w-4" />
-            {lang === 'ar' ? 'أسعار OSA ERP' : 'OSA ERP Pricing'}
+            {lang === 'ar' ? 'أسعار OSA ERP — اشتراك سنوي' : 'OSA ERP Pricing — Yearly'}
           </div>
           <h2 className="text-3xl md:text-5xl font-extrabold mb-4 animate-fade-in-up">
-            {lang === 'ar' ? 'باقة واحدة. كل المميزات.' : 'One Plan. All Features.'}
+            {lang === 'ar' ? 'باقتان تناسبان احتياجاتك' : 'Two Plans For Your Needs'}
           </h2>
           <p className="text-lg text-muted-foreground animate-fade-in-up delay-100">
-            {lang === 'ar' ? 'باقة احترافية واحدة تشمل كل ما تحتاجه — بدون تعقيد' : 'One professional plan with everything you need'}
+            {lang === 'ar' ? 'اشتراك سنوي يشمل الاستضافة والتحديثات والدعم الفني' : 'Yearly subscription includes hosting, updates, and tech support'}
           </p>
         </div>
 
-        {/* Main Pricing Card */}
-        <div className="max-w-2xl mx-auto mb-16">
-          <Card className="relative p-1 overflow-hidden animate-fade-in-up delay-200 shadow-soft-xl">
-            <div className="absolute inset-0 gradient-animated opacity-20" />
-            <div className="relative rounded-[calc(1rem-1px)] bg-card p-8 lg:p-10">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full gradient-primary px-5 py-1.5 text-xs font-bold text-primary-foreground shadow-glow flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                {lang === 'ar' ? 'الإطلاق الرسمي' : 'Official Launch'}
-              </div>
-
-              <div className="text-center mb-8 mt-4">
-                <div className="inline-grid h-16 w-16 place-items-center rounded-2xl gradient-primary text-primary-foreground shadow-glow mb-4">
-                  <Crown className="h-8 w-8" />
-                </div>
-                <h3 className="text-2xl font-extrabold mb-1">
-                  <span className="text-gradient-navy">OSA ERP</span>{' '}
-                  <span className="text-gradient">Professional</span>
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {lang === 'ar' ? 'الباقة الكاملة لإدارة مؤسستك' : 'Complete plan for your enterprise'}
-                </p>
-              </div>
-
-              <div className="text-center mb-8 p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/5">
-                <div className="flex items-end justify-center gap-2">
-                  <span className="text-5xl md:text-6xl font-extrabold tracking-tight text-gradient">{monthlyPrice}</span>
-                  <div className="text-start pb-2">
-                    <div className="text-2xl font-bold">ج.م</div>
-                    <div className="text-xs text-muted-foreground font-semibold">/ {lang === 'ar' ? 'شهرياً' : 'month'}</div>
+        {/* Two Plan Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-16">
+          {plans.map((plan, i) => {
+            const Icon = plan.icon
+            return (
+              <Card key={i} className={`relative p-8 border-2 ${plan.color} card-lift animate-fade-in-up ${plan.popular ? 'shadow-soft-xl' : ''}`} style={{ animationDelay: `${i * 0.1}s` }}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full gradient-primary px-5 py-1.5 text-xs font-bold text-primary-foreground shadow-glow flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {lang === 'ar' ? 'الأكثر طلباً' : 'Most Popular'}
                   </div>
-                </div>
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full glass px-3 py-1 text-xs font-semibold text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  {lang === 'ar' ? `أو ${yearlyPrice} ج.م / سنة` : `or ${yearlyPrice} EGP / year`}
-                </div>
-              </div>
+                )}
 
-              <Button size="lg" className="w-full h-14 text-base btn-primary-gradient btn-ripple shadow-glow" asChild>
-                <a href="#contact">
-                  <Crown className="h-5 w-5 ml-2" />
-                  {lang === 'ar' ? 'اطلب اشتراكك الآن' : 'Subscribe Now'}
-                </a>
-              </Button>
-            </div>
-          </Card>
+                <div className={`inline-grid h-16 w-16 place-items-center rounded-2xl ${plan.iconBg} text-white shadow-soft mb-4`}>
+                  <Icon className="h-8 w-8" />
+                </div>
+
+                <h3 className="text-2xl font-extrabold mb-1">{lang === 'ar' ? plan.name_ar : plan.name_en}</h3>
+                <p className="text-sm text-muted-foreground mb-2">{lang === 'ar' ? plan.desc_ar : plan.desc_en}</p>
+                <p className="text-xs text-muted-foreground mb-6">{lang === 'ar' ? plan.features_ar : plan.features_en}</p>
+
+                <Button size="lg" className={`w-full h-14 text-base ${plan.popular ? 'btn-primary-gradient btn-ripple shadow-glow' : ''}`} variant={plan.popular ? 'default' : 'outline'} asChild>
+                  <a href="#contact">
+                    <Crown className="h-5 w-5 ml-2" />
+                    {lang === 'ar' ? 'اطلب عرض سعر' : 'Request Quote'}
+                  </a>
+                </Button>
+              </Card>
+            )
+          })}
         </div>
 
         {/* Domain Options */}
@@ -143,7 +162,7 @@ export function Pricing() {
         </div>
 
         {/* Comparison Table */}
-        <div className="max-w-5xl mx-auto mb-16">
+        <div className="max-w-4xl mx-auto mb-16">
           <h3 className="text-2xl font-extrabold text-center mb-8">{lang === 'ar' ? 'مقارنة المميزات' : 'Features Comparison'}</h3>
           <Card className="p-0 overflow-hidden">
             <div className="overflow-x-auto">
@@ -151,25 +170,16 @@ export function Pricing() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-4 text-start font-bold min-w-[200px]">{lang === 'ar' ? 'الميزة' : 'Feature'}</th>
-                    <th className="px-4 py-4 text-center font-bold min-w-[100px]">
+                    <th className="px-4 py-4 text-center font-bold min-w-[120px]">
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Starter</span>
-                        <span className="text-lg font-extrabold">٤٩٩</span>
-                        <span className="text-[10px] text-muted-foreground">ج.م/شهر</span>
+                        <Sparkles className="h-5 w-5 text-blue-500" />
+                        <span className="text-sm">Standard</span>
                       </div>
                     </th>
-                    <th className="px-4 py-4 text-center font-bold min-w-[100px] bg-primary/10">
+                    <th className="px-4 py-4 text-center font-bold min-w-[120px] bg-primary/10">
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-primary font-bold">Professional ⭐</span>
-                        <span className="text-lg font-extrabold text-primary">٤١٧</span>
-                        <span className="text-[10px] text-muted-foreground">ج.م/شهر</span>
-                      </div>
-                    </th>
-                    <th className="px-4 py-4 text-center font-bold min-w-[100px]">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xs text-muted-foreground">Enterprise</span>
-                        <span className="text-lg font-extrabold">٨٣٣</span>
-                        <span className="text-[10px] text-muted-foreground">ج.م/شهر</span>
+                        <Crown className="h-5 w-5 text-primary" />
+                        <span className="text-sm text-primary font-bold">Enterprise ⭐</span>
                       </div>
                     </th>
                   </tr>
@@ -183,9 +193,8 @@ export function Pricing() {
                           <span className="font-medium">{lang === 'ar' ? f.ar : f.en}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center">{renderValue(f.starter)}</td>
-                      <td className="px-4 py-3 text-center bg-primary/5">{renderValue(f.pro)}</td>
-                      <td className="px-4 py-3 text-center">{renderValue(f.ent)}</td>
+                      <td className="px-4 py-3 text-center">{renderValue(f.standard)}</td>
+                      <td className="px-4 py-3 text-center bg-primary/5">{renderValue(f.enterprise)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -202,13 +211,7 @@ export function Pricing() {
               {lang === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
             </h3>
             <ul className="space-y-3">
-              {[
-                { ar: 'الاشتراك يُدفع مقدمًا ويُجدد سنويًا.', en: 'Subscription is paid in advance and renewed yearly.' },
-                { ar: 'يشمل الاشتراك الاستضافة والتحديثات والدعم الفني طوال مدة الاشتراك.', en: 'Includes hosting, updates, and tech support during subscription.' },
-                { ar: 'في حالة اختيار دومين احترافي، يتحمل العميل رسوم تجديد الدومين بعد السنة الأولى.', en: 'Professional domain renewal after first year at registrar rate.' },
-                { ar: 'في حالة استخدام الدومين المجاني (Vercel)، لا توجد رسوم دومين.', en: 'Free Vercel domain has no domain fees.' },
-                { ar: 'لا يتم استرداد قيمة الاشتراك بعد تفعيل الخدمة.', en: 'Non-refundable after activation.' },
-              ].map((term, i) => (
+              {terms.map((term, i) => (
                 <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                   <div className="grid h-5 w-5 place-items-center rounded-full bg-primary/15 text-primary text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
                   <span className="leading-relaxed">{lang === 'ar' ? term.ar : term.en}</span>

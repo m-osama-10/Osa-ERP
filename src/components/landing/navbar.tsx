@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Moon, Sun, Rocket } from 'lucide-react'
+import { Menu, X, Moon, Sun, Rocket, Lock } from 'lucide-react'
 import { useApp } from '@/components/erp/app-context'
 
 const navLinks = [
@@ -16,7 +16,7 @@ const navLinks = [
 ]
 
 export function Navbar() {
-  const { lang, theme, toggleTheme, setUser } = useApp()
+  const { lang, theme, toggleTheme, setUser, setShowLogin } = useApp()
   const [scrolled, setScrolled] = React.useState(false)
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
@@ -36,6 +36,10 @@ export function Navbar() {
       const data = await res.json()
       setUser(data)
     }
+  }
+
+  const goLogin = () => {
+    setShowLogin(true)
   }
 
   return (
@@ -63,18 +67,21 @@ export function Navbar() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button onClick={toggleTheme} className="grid h-9 w-9 place-items-center rounded-xl hover:bg-muted text-muted-foreground hover:text-primary transition-all hover:scale-110">
             {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </button>
 
-          <Button
-            onClick={quickDemo}
-            className="hidden sm:flex btn-primary-gradient btn-ripple gap-2"
-            size="sm"
-          >
+          {/* Login button */}
+          <Button variant="ghost" size="sm" onClick={goLogin} className="hidden sm:flex gap-1.5">
+            <Lock className="h-4 w-4" />
+            {lang === 'ar' ? 'تسجيل الدخول' : 'Login'}
+          </Button>
+
+          {/* Demo button */}
+          <Button onClick={quickDemo} className="hidden sm:flex btn-primary-gradient btn-ripple gap-1.5" size="sm">
             <Rocket className="h-4 w-4" />
-            {lang === 'ar' ? '🚀 دخول تجريبي' : '🚀 Live Demo'}
+            {lang === 'ar' ? '🚀 تجريبي' : '🚀 Demo'}
           </Button>
 
           <button onClick={() => setMobileOpen(o => !o)} className="lg:hidden grid h-9 w-9 place-items-center rounded-xl hover:bg-muted transition-colors">
@@ -93,6 +100,16 @@ export function Navbar() {
                 {lang === 'ar' ? link.labelAr : link.labelEn}
               </a>
             ))}
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => { setMobileOpen(false); goLogin() }}>
+                <Lock className="h-4 w-4" />
+                {lang === 'ar' ? 'تسجيل الدخول' : 'Login'}
+              </Button>
+              <Button size="sm" className="flex-1 btn-primary-gradient gap-1.5" onClick={() => { setMobileOpen(false); quickDemo() }}>
+                <Rocket className="h-4 w-4" />
+                {lang === 'ar' ? '🚀 تجريبي' : '🚀 Demo'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

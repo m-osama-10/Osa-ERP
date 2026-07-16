@@ -26,11 +26,18 @@ import { LandingPage } from '@/components/landing'
 import { ShieldAlert } from 'lucide-react'
 
 function MainContent() {
-  const { activeModule, sidebarOpen, lang, user, loadingAuth, hasPermission } = useApp()
+  const { activeModule, sidebarOpen, lang, user, loadingAuth, hasPermission, showLogin, setShowLogin } = useApp()
 
-  // If not logged in → show Landing Page (instead of login form)
+  // If loading auth → show loading
   if (loadingAuth) return <Loading label={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />
-  if (!user) return <LandingPage />
+
+  // If not logged in:
+  //   - show Login form if showLogin is true (user clicked "Login" button)
+  //   - otherwise show Landing Page
+  if (!user) {
+    if (showLogin) return <Login />
+    return <LandingPage />
+  }
 
   const modules: Record<string, { perm: string; component: React.ReactNode }> = {
     dashboard: { perm: 'dashboard.view', component: <Dashboard /> },

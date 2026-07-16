@@ -34,6 +34,9 @@ type AppState = {
   setActiveModule: (m: string) => void
   sidebarOpen: boolean
   setSidebarOpen: (o: boolean) => void
+  // Login form visibility (for landing → login transition)
+  showLogin: boolean
+  setShowLogin: (v: boolean) => void
   // Currency
   displayCurrency: CurrencyCode
   setDisplayCurrency: (c: CurrencyCode) => void
@@ -50,6 +53,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = React.useState<Theme>('light')
   const [activeModule, setActiveModule] = React.useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = React.useState(true)
+  const [showLogin, setShowLogin] = React.useState(false)
   const [displayCurrency, setDisplayCurrencyState] = React.useState<CurrencyCode>('EGP')
   const [exchangeRates, setExchangeRates] = React.useState<ExchangeRates>({})
   const [user, setUser] = React.useState<User>(null)
@@ -125,6 +129,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       lang, setLang, theme, toggleTheme,
       activeModule, setActiveModule, sidebarOpen, setSidebarOpen,
+      showLogin, setShowLogin,
       displayCurrency, setDisplayCurrency, exchangeRates, baseCurrency, convertAmount, formatMoney,
       user, setUser, hasPermission, loadingAuth,
     }}>
