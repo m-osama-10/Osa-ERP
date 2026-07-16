@@ -21,44 +21,6 @@
 - 🌍 **ثنائي اللغة** (عربي/إنجليزي + RTL)
 - 🌙 **Dark/Light Mode**
 
-## 🚀 البدء السريع
-
-### المتطلبات
-- Node.js 18+ أو Bun
-- PostgreSQL (أو SQLite للتطوير)
-
-### التثبيت
-```bash
-bun install
-cp .env.development .env
-bun run db:push
-bun run db:seed
-bun run dev
-```
-
-### الحسابات التجريبية
-| الحساب | البريد | كلمة المرور |
-|--------|--------|-------------|
-| 👑 المالك | mohamed.osama@osa-erp.com | Osama@2026 |
-| 🎯 تجريبي | demo@osaerp.com | Demo@123 |
-
-## 📦 النشر على Vercel
-
-1. ارفع المشروع على GitHub
-2. اربط الـ repo بـ Vercel
-3. أضف متغيرات البيئة (انظر `.env.production.example`)
-4. اضبط Build Command: `prisma generate && next build`
-5. Deploy ✅
-
-### متغيرات البيئة المطلوبة
-```
-DATABASE_URL=postgresql://...
-DIRECT_URL=postgresql://...
-NEXTAUTH_SECRET=<32-char-hex>
-DEMO_EMAIL=demo@osaerp.com
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-```
-
 ## 🛠️ التقنيات
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui
@@ -79,4 +41,4 @@ NEXT_PUBLIC_APP_URL=https://your-domain.com
 
 ## 📄 الترخيص
 
-© 2026 OSA ERP. جميع الحقوق محفوظة.
+© 2026 OSA ERP. جميع الحقوق محفوظة. مشروع شخصي.
