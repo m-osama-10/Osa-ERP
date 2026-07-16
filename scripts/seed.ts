@@ -1,26 +1,41 @@
-// Osa ERP - Seed Data
+// Osa ERP - Seed Data v2 (with currencies + auth + permissions)
 import { db } from '../src/lib/db'
+import bcrypt from 'bcryptjs'
 
 async function main() {
-  console.log('🌱 Seeding Osa ERP...')
+  console.log('🌱 Seeding Osa ERP v2...')
 
-  // 1. Company & Branch
+  // ============== Currencies ==============
+  const egp = await db.currency.create({ data: { code: 'EGP', name: 'جنيه مصري', nameEn: 'Egyptian Pound', symbol: 'ج.م', isBase: true } })
+  const usd = await db.currency.create({ data: { code: 'USD', name: 'دولار أمريكي', nameEn: 'US Dollar', symbol: '$', isBase: false } })
+  const sar = await db.currency.create({ data: { code: 'SAR', name: 'ريال سعودي', nameEn: 'Saudi Riyal', symbol: 'ر.س', isBase: false } })
+
+  // ============== Exchange Rates ==============
+  // EGP is base, 1 USD = 48 EGP, 1 SAR = 12.8 EGP
+  await db.exchangeRate.create({ data: { fromCode: 'EGP', toCode: 'USD', rate: 1 / 48 } })
+  await db.exchangeRate.create({ data: { fromCode: 'USD', toCode: 'EGP', rate: 48 } })
+  await db.exchangeRate.create({ data: { fromCode: 'EGP', toCode: 'SAR', rate: 1 / 12.8 } })
+  await db.exchangeRate.create({ data: { fromCode: 'SAR', toCode: 'EGP', rate: 12.8 } })
+  await db.exchangeRate.create({ data: { fromCode: 'USD', toCode: 'SAR', rate: 3.75 } })
+  await db.exchangeRate.create({ data: { fromCode: 'SAR', toCode: 'USD', rate: 1 / 3.75 } })
+
+  // ============== Company & Branches ==============
   const company = await db.company.create({
     data: {
       name: 'شركة أوسا التجارية',
       nameEn: 'Osa Trading Co.',
       taxNo: '300000000000003',
-      phone: '+966 11 234 5678',
+      phone: '+20 2 234 5678',
       email: 'info@osa-erp.com',
-      address: 'الرياض، المملكة العربية السعودية',
-      currency: 'SAR',
+      address: 'القاهرة، جمهورية مصر العربية',
+      currency: 'EGP',
     },
   })
 
-  const branch1 = await db.branch.create({ data: { companyId: company.id, name: 'الفرع الرئيسي', code: 'BR-01', address: 'الرياض - حي العليا', phone: '0112345678' } })
-  const branch2 = await db.branch.create({ data: { companyId: company.id, name: 'فرع جدة', code: 'BR-02', address: 'جدة - حي الروضة', phone: '0126834590' } })
+  const branch1 = await db.branch.create({ data: { companyId: company.id, name: 'الفرع الرئيسي', code: 'BR-01', address: 'القاهرة - مدينة نصر', phone: '022345678' } })
+  const branch2 = await db.branch.create({ data: { companyId: company.id, name: 'فرع الإسكندرية', code: 'BR-02', address: 'الإسكندرية - سموحة', phone: '034567890' } })
 
-  // 2. Chart of Accounts
+  // ============== Chart of Accounts ==============
   const accounts = [
     { code: '1000', name: 'الأصول', nameEn: 'Assets', type: 'ASSET' },
     { code: '1100', name: 'الأصول المتداولة', nameEn: 'Current Assets', type: 'ASSET', parent: '1000' },
@@ -64,96 +79,90 @@ async function main() {
     accountMap[a.code] = acc.id
   }
 
-  // 3. Categories
+  // ============== Categories ==============
   const cat1 = await db.category.create({ data: { name: 'إلكترونيات', nameEn: 'Electronics' } })
   const cat2 = await db.category.create({ data: { name: 'ملابس', nameEn: 'Clothing' } })
   const cat3 = await db.category.create({ data: { name: 'مواد غذائية', nameEn: 'Food' } })
   const cat4 = await db.category.create({ data: { name: 'أثاث', nameEn: 'Furniture' } })
 
-  // 4. Items
+  // ============== Items (EGP prices) ==============
   const items = [
-    { sku: 'ITM-001', barcode: '628100001', name: 'لابتوب ديل', nameEn: 'Dell Laptop', categoryId: cat1.id, unit: 'PCS', costPrice: 2800, salePrice: 3500, qtyOnHand: 45 },
-    { sku: 'ITM-002', barcode: '628100002', name: 'هاتف سامسونج', nameEn: 'Samsung Phone', categoryId: cat1.id, unit: 'PCS', costPrice: 1800, salePrice: 2400, qtyOnHand: 80 },
-    { sku: 'ITM-003', barcode: '628100003', name: 'سماعة بلوتوث', nameEn: 'Bluetooth Headset', categoryId: cat1.id, unit: 'PCS', costPrice: 150, salePrice: 280, qtyOnHand: 120 },
-    { sku: 'ITM-004', barcode: '628100004', name: 'قميص رجالي', nameEn: 'Men Shirt', categoryId: cat2.id, unit: 'PCS', costPrice: 60, salePrice: 130, qtyOnHand: 200 },
-    { sku: 'ITM-005', barcode: '628100005', name: 'فستان نسائي', nameEn: 'Women Dress', categoryId: cat2.id, unit: 'PCS', costPrice: 180, salePrice: 350, qtyOnHand: 75 },
-    { sku: 'ITM-006', barcode: '628100006', name: 'أرز بسمتي 5كجم', nameEn: 'Basmati Rice 5kg', categoryId: cat3.id, unit: 'BAG', costPrice: 35, salePrice: 55, qtyOnHand: 300 },
-    { sku: 'ITM-007', barcode: '628100007', name: 'زيت دوار الشمس 1.5ل', nameEn: 'Sunflower Oil', categoryId: cat3.id, unit: 'BTL', costPrice: 12, salePrice: 22, qtyOnHand: 250 },
-    { sku: 'ITM-008', barcode: '628100008', name: 'كرسي مكتبي', nameEn: 'Office Chair', categoryId: cat4.id, unit: 'PCS', costPrice: 350, salePrice: 600, qtyOnHand: 30 },
-    { sku: 'ITM-009', barcode: '628100009', name: 'مكتب خشبي', nameEn: 'Wooden Desk', categoryId: cat4.id, unit: 'PCS', costPrice: 800, salePrice: 1300, qtyOnHand: 18 },
-    { sku: 'ITM-010', barcode: '628100010', name: 'شاشة LG 27 بوصة', nameEn: 'LG Monitor 27', categoryId: cat1.id, unit: 'PCS', costPrice: 900, salePrice: 1300, qtyOnHand: 8 },
+    { sku: 'ITM-001', barcode: '628100001', name: 'لابتوب ديل', nameEn: 'Dell Laptop', categoryId: cat1.id, unit: 'PCS', costPrice: 18000, salePrice: 22500, qtyOnHand: 45 },
+    { sku: 'ITM-002', barcode: '628100002', name: 'هاتف سامسونج', nameEn: 'Samsung Phone', categoryId: cat1.id, unit: 'PCS', costPrice: 11500, salePrice: 15500, qtyOnHand: 80 },
+    { sku: 'ITM-003', barcode: '628100003', name: 'سماعة بلوتوث', nameEn: 'Bluetooth Headset', categoryId: cat1.id, unit: 'PCS', costPrice: 950, salePrice: 1800, qtyOnHand: 120 },
+    { sku: 'ITM-004', barcode: '628100004', name: 'قميص رجالي', nameEn: 'Men Shirt', categoryId: cat2.id, unit: 'PCS', costPrice: 350, salePrice: 750, qtyOnHand: 200 },
+    { sku: 'ITM-005', barcode: '628100005', name: 'فستان نسائي', nameEn: 'Women Dress', categoryId: cat2.id, unit: 'PCS', costPrice: 1100, salePrice: 2200, qtyOnHand: 75 },
+    { sku: 'ITM-006', barcode: '628100006', name: 'أرز بسمتي 5كجم', nameEn: 'Basmati Rice 5kg', categoryId: cat3.id, unit: 'BAG', costPrice: 220, salePrice: 340, qtyOnHand: 300 },
+    { sku: 'ITM-007', barcode: '628100007', name: 'زيت دوار الشمس 1.5ل', nameEn: 'Sunflower Oil', categoryId: cat3.id, unit: 'BTL', costPrice: 75, salePrice: 140, qtyOnHand: 250 },
+    { sku: 'ITM-008', barcode: '628100008', name: 'كرسي مكتبي', nameEn: 'Office Chair', categoryId: cat4.id, unit: 'PCS', costPrice: 2200, salePrice: 3800, qtyOnHand: 30 },
+    { sku: 'ITM-009', barcode: '628100009', name: 'مكتب خشبي', nameEn: 'Wooden Desk', categoryId: cat4.id, unit: 'PCS', costPrice: 5000, salePrice: 8200, qtyOnHand: 18 },
+    { sku: 'ITM-010', barcode: '628100010', name: 'شاشة LG 27 بوصة', nameEn: 'LG Monitor 27', categoryId: cat1.id, unit: 'PCS', costPrice: 5800, salePrice: 8200, qtyOnHand: 8 },
   ]
-  for (const it of items) {
-    await db.item.create({ data: it })
-  }
+  for (const it of items) await db.item.create({ data: it })
 
-  // 5. Customers
+  // ============== Customers ==============
   const customers = [
-    { code: 'C-001', name: 'مؤسسة النور التجارية', nameEn: 'Al-Noor Trading', type: 'COMPANY', phone: '0551234567', email: 'info@alnoor.sa', creditLimit: 100000, balance: 45000, openingBalance: 0 },
-    { code: 'C-002', name: 'شركة الأفق', nameEn: 'Al-Ufuq Co.', type: 'COMPANY', phone: '0552345678', email: 'info@ufuq.sa', creditLimit: 150000, balance: 72000, openingBalance: 0 },
-    { code: 'C-003', name: 'محمد العتيبي', nameEn: 'Mohammed Al-Otaibi', type: 'INDIVIDUAL', phone: '0509876543', email: 'mohammed@email.com', creditLimit: 5000, balance: 1500, openingBalance: 0 },
-    { code: 'C-004', name: 'فاطمة الزهراني', nameEn: 'Fatima Al-Zahrani', type: 'INDIVIDUAL', phone: '0512345678', email: 'fatima@email.com', creditLimit: 8000, balance: 3200, openingBalance: 0 },
-    { code: 'C-005', name: 'مجموعة السلام', nameEn: 'Al-Salam Group', type: 'COMPANY', phone: '0563456789', email: 'info@salam.sa', creditLimit: 200000, balance: 88000, openingBalance: 0 },
-    { code: 'C-006', name: 'أحمد القحطاني', nameEn: 'Ahmed Al-Qahtani', type: 'INDIVIDUAL', phone: '0534567890', email: 'ahmed@email.com', creditLimit: 6000, balance: 800, openingBalance: 0 },
+    { code: 'C-001', name: 'مؤسسة النور التجارية', nameEn: 'Al-Noor Trading', type: 'COMPANY', phone: '01001234567', email: 'info@alnoor.eg', creditLimit: 500000, balance: 220000, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-002', name: 'شركة الأفق', nameEn: 'Al-Ufuq Co.', type: 'COMPANY', phone: '01002345678', email: 'info@ufuq.eg', creditLimit: 750000, balance: 360000, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-003', name: 'محمد العتيبي', nameEn: 'Mohammed Al-Otaibi', type: 'INDIVIDUAL', phone: '01098765432', email: 'mohammed@email.com', creditLimit: 25000, balance: 7500, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-004', name: 'فاطمة الزهراني', nameEn: 'Fatima Al-Zahrani', type: 'INDIVIDUAL', phone: '01123456789', email: 'fatima@email.com', creditLimit: 40000, balance: 16000, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-005', name: 'مجموعة السلام', nameEn: 'Al-Salam Group', type: 'COMPANY', phone: '01234567890', email: 'info@salam.eg', creditLimit: 1000000, balance: 440000, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-006', name: 'أحمد القحطاني', nameEn: 'Ahmed Al-Qahtani', type: 'INDIVIDUAL', phone: '01056789012', email: 'ahmed@email.com', creditLimit: 30000, balance: 4000, openingBalance: 0, currency: 'EGP' },
+    { code: 'C-007', name: 'Global Tech LLC', nameEn: 'Global Tech LLC', type: 'COMPANY', phone: '+1 555 0123', email: 'sales@globaltech.com', creditLimit: 10000, balance: 3500, openingBalance: 0, currency: 'USD' },
   ]
-  for (const c of customers) {
-    await db.customer.create({ data: c })
-  }
+  for (const c of customers) await db.customer.create({ data: c })
 
-  // 6. Suppliers
+  // ============== Suppliers ==============
   const suppliers = [
-    { code: 'S-001', name: 'مورد الإلكترونيات', nameEn: 'Electronics Supplier', phone: '0114567890', email: 'sales@elec-sup.com', creditLimit: 200000, balance: 95000 },
-    { code: 'S-002', name: 'مصنع الملابس الحديثة', nameEn: 'Modern Clothing Factory', phone: '0115678901', email: 'info@modern-clothing.com', creditLimit: 100000, balance: 42000 },
-    { code: 'S-003', name: 'شركة الأغذية المتنوعة', nameEn: 'Al-Aghdhiya Co.', phone: '0116789012', email: 'sales@aghdhiya.sa', creditLimit: 150000, balance: 28000 },
-    { code: 'S-004', name: 'مصنع الأثاث الوطني', nameEn: 'National Furniture', phone: '0117890123', email: 'info@nat-furniture.com', creditLimit: 120000, balance: 63000 },
+    { code: 'S-001', name: 'مورد الإلكترونيات', nameEn: 'Electronics Supplier', phone: '0234567890', email: 'sales@elec-sup.com', creditLimit: 1000000, balance: 475000, currency: 'EGP' },
+    { code: 'S-002', name: 'مصنع الملابس الحديثة', nameEn: 'Modern Clothing Factory', phone: '0235678901', email: 'info@modern-clothing.com', creditLimit: 500000, balance: 210000, currency: 'EGP' },
+    { code: 'S-003', name: 'شركة الأغذية المتنوعة', nameEn: 'Al-Aghdhiya Co.', phone: '0236789012', email: 'sales@aghdhiya.eg', creditLimit: 750000, balance: 140000, currency: 'EGP' },
+    { code: 'S-004', name: 'مصنع الأثاث الوطني', nameEn: 'National Furniture', phone: '0237890123', email: 'info@nat-furniture.com', creditLimit: 600000, balance: 315000, currency: 'EGP' },
+    { code: 'S-005', name: 'China Imports Ltd', nameEn: 'China Imports Ltd', phone: '+86 755 1234', email: 'export@china-imp.cn', creditLimit: 20000, balance: 8500, currency: 'USD' },
   ]
-  for (const s of suppliers) {
-    await db.supplier.create({ data: s })
-  }
+  for (const s of suppliers) await db.supplier.create({ data: s })
 
-  // 7. Cash & Banks
-  await db.cash.create({ data: { code: 'CASH-01', name: 'الخزنة الرئيسية', branchId: branch1.id, balance: 25000 } })
-  await db.cash.create({ data: { code: 'CASH-02', name: 'خزنة فرع جدة', branchId: branch2.id, balance: 12000 } })
+  // ============== Cash & Banks ==============
+  await db.cash.create({ data: { code: 'CASH-01', name: 'الخزنة الرئيسية', branchId: branch1.id, balance: 125000, currency: 'EGP' } })
+  await db.cash.create({ data: { code: 'CASH-02', name: 'خزنة فرع الإسكندرية', branchId: branch2.id, balance: 60000, currency: 'EGP' } })
+  await db.cash.create({ data: { code: 'CASH-03', name: 'Petty Cash USD', branchId: branch1.id, balance: 1500, currency: 'USD' } })
 
-  await db.bankAccount.create({ data: { code: 'BANK-01', bankName: 'البنك الأهلي', accountNo: '1234567890', iban: 'SA0380000000608010167519', branchId: branch1.id, balance: 480000 } })
-  await db.bankAccount.create({ data: { code: 'BANK-02', bankName: 'بنك الراجحي', accountNo: '9876543210', iban: 'SA4420000001234567891234', branchId: branch1.id, balance: 320000 } })
+  await db.bankAccount.create({ data: { code: 'BANK-01', bankName: 'البنك الأهلي المصري', accountNo: '1234567890', iban: 'EG3800300001123456789012', branchId: branch1.id, balance: 2400000, currency: 'EGP' } })
+  await db.bankAccount.create({ data: { code: 'BANK-02', bankName: 'بنك مصر', accountNo: '9876543210', iban: 'EG4400020001987654321012', branchId: branch1.id, balance: 1600000, currency: 'EGP' } })
+  await db.bankAccount.create({ data: { code: 'BANK-03', bankName: 'HSBC Egypt', accountNo: '4567890123', iban: 'EG12HSBC00014567890123', branchId: branch1.id, balance: 25000, currency: 'USD' } })
 
-  // 8. Employees
+  // ============== Employees ==============
   const employees = [
-    { code: 'EMP-001', name: 'خالد الحربي', nameEn: 'Khalid Al-Harbi', position: 'مدير عام', department: 'الإدارة', basicSalary: 18000, allowances: 3000, hireDate: new Date('2020-01-15') },
-    { code: 'EMP-002', name: 'سارة المطيري', nameEn: 'Sara Al-Mutairi', position: 'محاسبة', department: 'المالية', basicSalary: 8500, allowances: 1500, hireDate: new Date('2021-03-10') },
-    { code: 'EMP-003', name: 'عبدالله الدوسري', nameEn: 'Abdullah Al-Dosari', position: 'أخصائي مبيعات', department: 'المبيعات', basicSalary: 6500, allowances: 2000, hireDate: new Date('2022-06-01') },
-    { code: 'EMP-004', name: 'نورة العنزي', nameEn: 'Noura Al-Anazi', position: 'مديرة موارد بشرية', department: 'الموارد البشرية', basicSalary: 11000, allowances: 2000, hireDate: new Date('2021-09-20') },
-    { code: 'EMP-005', name: 'فهد الشمري', nameEn: 'Fahad Al-Shammari', position: 'أمين مخزن', department: 'المخازن', basicSalary: 5500, allowances: 1000, hireDate: new Date('2023-02-01') },
-    { code: 'EMP-006', name: 'ريم القحطاني', nameEn: 'Reem Al-Qahtani', position: 'أخصائي تسويق', department: 'التسويق', basicSalary: 7000, allowances: 1500, hireDate: new Date('2022-11-15') },
-    { code: 'EMP-007', name: 'ماجد العتيبي', nameEn: 'Majed Al-Otaibi', position: 'مندوب مبيعات', department: 'المبيعات', basicSalary: 5000, allowances: 2500, hireDate: new Date('2023-08-01') },
-    { code: 'EMP-008', name: 'هند الزهراني', nameEn: 'Hind Al-Zahrani', position: 'محاسبة أولى', department: 'المالية', basicSalary: 9500, allowances: 1800, hireDate: new Date('2021-12-05') },
+    { code: 'EMP-001', name: 'خالد الحربي', nameEn: 'Khalid Al-Harbi', position: 'مدير عام', department: 'الإدارة', basicSalary: 35000, allowances: 8000, hireDate: new Date('2020-01-15') },
+    { code: 'EMP-002', name: 'سارة المطيري', nameEn: 'Sara Al-Mutairi', position: 'محاسبة', department: 'المالية', basicSalary: 15000, allowances: 3500, hireDate: new Date('2021-03-10') },
+    { code: 'EMP-003', name: 'عبدالله الدوسري', nameEn: 'Abdullah Al-Dosari', position: 'أخصائي مبيعات', department: 'المبيعات', basicSalary: 12000, allowances: 5000, hireDate: new Date('2022-06-01') },
+    { code: 'EMP-004', name: 'نورة العنزي', nameEn: 'Noura Al-Anazi', position: 'مديرة موارد بشرية', department: 'الموارد البشرية', basicSalary: 22000, allowances: 4500, hireDate: new Date('2021-09-20') },
+    { code: 'EMP-005', name: 'فهد الشمري', nameEn: 'Fahad Al-Shammari', position: 'أمين مخزن', department: 'المخازن', basicSalary: 9000, allowances: 2000, hireDate: new Date('2023-02-01') },
+    { code: 'EMP-006', name: 'ريم القحطاني', nameEn: 'Reem Al-Qahtani', position: 'أخصائي تسويق', department: 'التسويق', basicSalary: 13000, allowances: 3500, hireDate: new Date('2022-11-15') },
+    { code: 'EMP-007', name: 'ماجد العتيبي', nameEn: 'Majed Al-Otaibi', position: 'مندوب مبيعات', department: 'المبيعات', basicSalary: 8000, allowances: 5500, hireDate: new Date('2023-08-01') },
+    { code: 'EMP-008', name: 'هند الزهراني', nameEn: 'Hind Al-Zahrani', position: 'محاسبة أولى', department: 'المالية', basicSalary: 17000, allowances: 4000, hireDate: new Date('2021-12-05') },
   ]
   for (const e of employees) {
     const emp = await db.employee.create({ data: e })
     for (let i = 0; i < 30; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dayOfWeek = date.getDay()
-      if (dayOfWeek === 5 || dayOfWeek === 6) continue
+      const date = new Date(); date.setDate(date.getDate() - i)
+      if (date.getDay() === 5 || date.getDay() === 6) continue
       const rand = Math.random()
       const status = rand > 0.9 ? 'ABSENT' : rand > 0.75 ? 'LATE' : 'PRESENT'
-      const checkIn = new Date(date)
-      checkIn.setHours(8, status === 'LATE' ? 45 : 30, 0, 0)
-      const checkOut = new Date(date)
-      checkOut.setHours(17, 0, 0, 0)
+      const checkIn = new Date(date); checkIn.setHours(8, status === 'LATE' ? 45 : 30, 0, 0)
+      const checkOut = new Date(date); checkOut.setHours(17, 0, 0, 0)
       await db.attendance.create({
         data: { employeeId: emp.id, date, checkIn: status === 'ABSENT' ? null : checkIn, checkOut: status === 'ABSENT' ? null : checkOut, status }
       })
     }
   }
 
-  // 9. Invoices
+  // ============== Invoices (spread across 6 months for P&L analysis) ==============
   const allCustomers = await db.customer.findMany()
   const allItems = await db.item.findMany()
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     const date = new Date()
-    date.setDate(date.getDate() - Math.floor(Math.random() * 60))
+    date.setDate(date.getDate() - Math.floor(Math.random() * 180))
     const customer = allCustomers[Math.floor(Math.random() * allCustomers.length)]
     const itemCount = Math.floor(Math.random() * 4) + 1
     let subtotal = 0
@@ -165,7 +174,7 @@ async function main() {
       subtotal += total
       itemLines.push({ itemId: item.id, quantity: qty, price: item.salePrice, discount: 0, total })
     }
-    const taxAmount = subtotal * 0.15
+    const taxAmount = subtotal * 0.14
     const total = subtotal + taxAmount
     const paidAmount = Math.random() > 0.3 ? total : Math.random() > 0.5 ? total * 0.5 : 0
     const status = paidAmount === total ? 'PAID' : paidAmount > 0 ? 'PARTIAL' : 'UNPAID'
@@ -173,26 +182,19 @@ async function main() {
       data: {
         invoiceNo: `INV-${String(1000 + i).padStart(5, '0')}`,
         customerId: customer.id,
-        date,
-        dueDate: new Date(date.getTime() + 30 * 24 * 60 * 60 * 1000),
-        subtotal,
-        discount: 0,
-        taxRate: 15,
-        taxAmount,
-        total,
-        paidAmount,
-        status,
+        date, dueDate: new Date(date.getTime() + 30 * 86400000),
+        subtotal, discount: 0, taxRate: 14, taxAmount, total, paidAmount, status,
         type: 'SALES',
         items: { create: itemLines },
       },
     })
   }
 
-  // 10. Purchases
+  // ============== Purchases ==============
   const allSuppliers = await db.supplier.findMany()
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 25; i++) {
     const date = new Date()
-    date.setDate(date.getDate() - Math.floor(Math.random() * 60))
+    date.setDate(date.getDate() - Math.floor(Math.random() * 180))
     const supplier = allSuppliers[Math.floor(Math.random() * allSuppliers.length)]
     const itemCount = Math.floor(Math.random() * 3) + 1
     let subtotal = 0
@@ -204,74 +206,98 @@ async function main() {
       subtotal += total
       itemLines.push({ itemId: item.id, quantity: qty, price: item.costPrice, total })
     }
-    const taxAmount = subtotal * 0.15
+    const taxAmount = subtotal * 0.14
     const total = subtotal + taxAmount
     await db.purchase.create({
       data: {
         purchaseNo: `PUR-${String(2000 + i).padStart(5, '0')}`,
-        supplierId: supplier.id,
-        date,
-        subtotal,
-        taxAmount,
-        total,
-        paidAmount: total,
-        status: 'PAID',
+        supplierId: supplier.id, date, subtotal, taxAmount, total, paidAmount: total, status: 'PAID',
         items: { create: itemLines },
       },
     })
   }
 
-  // 11. Journal Entries
+  // ============== Journal Entries ==============
   const accByCode: Record<string, string> = {}
-  const allAccs = await db.account.findMany()
-  for (const a of allAccs) accByCode[a.code] = a.id
+  for (const a of await db.account.findMany()) accByCode[a.code] = a.id
 
   const journalEntries = [
-    { desc: 'رأس المال المدفوع', dr: '1101', cr: '3100', amount: 500000 },
-    { desc: 'مبيعات نقدية', dr: '1101', cr: '4100', amount: 75000 },
-    { desc: 'تحصيل من عميل', dr: '1101', cr: '1102', amount: 35000 },
-    { desc: 'سداد مورد', dr: '2101', cr: '1101', amount: 28000 },
-    { desc: 'صرف رواتب', dr: '5200', cr: '1101', amount: 95000 },
-    { desc: 'دفع إيجار', dr: '5300', cr: '1101', amount: 30000 },
-    { desc: 'فاتورة كهرباء', dr: '5400', cr: '1101', amount: 8500 },
-    { desc: 'إعلان تسويقي', dr: '5500', cr: '1101', amount: 18000 },
-    { desc: 'شراء معدات', dr: '1202', cr: '1101', amount: 65000 },
-    { desc: 'مبيعات آجلة', dr: '1102', cr: '4100', amount: 120000 },
-    { desc: 'إثبات ضريبة المبيعات', dr: '1102', cr: '2102', amount: 18000 },
-    { desc: 'تكلفة بضاعة مباعة', dr: '5100', cr: '1103', amount: 220000 },
+    { desc: 'رأس المال المدفوع', dr: '1101', cr: '3100', amount: 2500000 },
+    { desc: 'مبيعات نقدية', dr: '1101', cr: '4100', amount: 380000 },
+    { desc: 'تحصيل من عميل', dr: '1101', cr: '1102', amount: 175000 },
+    { desc: 'سداد مورد', dr: '2101', cr: '1101', amount: 140000 },
+    { desc: 'صرف رواتب', dr: '5200', cr: '1101', amount: 475000 },
+    { desc: 'دفع إيجار', dr: '5300', cr: '1101', amount: 150000 },
+    { desc: 'فاتورة كهرباء', dr: '5400', cr: '1101', amount: 42000 },
+    { desc: 'إعلان تسويقي', dr: '5500', cr: '1101', amount: 90000 },
+    { desc: 'شراء معدات', dr: '1202', cr: '1101', amount: 325000 },
+    { desc: 'مبيعات آجلة', dr: '1102', cr: '4100', amount: 600000 },
+    { desc: 'إثبات ضريبة المبيعات', dr: '1102', cr: '2102', amount: 90000 },
+    { desc: 'تكلفة بضاعة مباعة', dr: '5100', cr: '1103', amount: 1100000 },
   ]
   for (let i = 0; i < journalEntries.length; i++) {
     const je = journalEntries[i]
     await db.journalEntry.create({
       data: {
         entryNo: `JE-${String(i + 1).padStart(4, '0')}`,
-        date: new Date(Date.now() - (i + 1) * 86400000 * 3),
-        description: je.desc,
-        totalDebit: je.amount,
-        totalCredit: je.amount,
-        status: 'POSTED',
-        lines: {
-          create: [
-            { accountId: accByCode[je.dr], debit: je.amount, credit: 0 },
-            { accountId: accByCode[je.cr], debit: 0, credit: je.amount },
-          ],
-        },
+        date: new Date(Date.now() - (i + 1) * 86400000 * 5),
+        description: je.desc, totalDebit: je.amount, totalCredit: je.amount, status: 'POSTED',
+        lines: { create: [
+          { accountId: accByCode[je.dr], debit: je.amount, credit: 0 },
+          { accountId: accByCode[je.cr], debit: 0, credit: je.amount },
+        ] },
       },
     })
   }
 
-  // 12. Users
-  await db.user.create({ data: { email: 'admin@osa-erp.com', name: 'المدير العام', role: 'ADMIN', branchId: branch1.id } })
-  await db.user.create({ data: { email: 'accountant@osa-erp.com', name: 'المحاسب', role: 'ACCOUNTANT', branchId: branch1.id } })
-  await db.user.create({ data: { email: 'sales@osa-erp.com', name: 'مسؤول المبيعات', role: 'SALES', branchId: branch1.id } })
+  // ============== Users with hashed passwords ==============
+  const adminPass = await bcrypt.hash('admin123', 10)
+  const accPass = await bcrypt.hash('acc123', 10)
+  const salesPass = await bcrypt.hash('sales123', 10)
 
-  // 13. Cost Centers
+  // All permissions for admin
+  const allPerms = JSON.stringify([
+    'dashboard.view', 'accounting.view', 'accounting.create', 'accounting.edit', 'accounting.delete',
+    'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
+    'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
+    'treasury.view', 'treasury.create', 'treasury.edit',
+    'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.delete',
+    'production.view', 'production.create', 'production.edit',
+    'hr.view', 'hr.create', 'hr.edit', 'hr.delete',
+    'sales.view', 'sales.create', 'sales.edit', 'sales.delete', 'pos.use',
+    'representatives.view', 'representatives.manage',
+    'reports.view', 'reports.export',
+    'branches.view', 'branches.manage',
+    'permissions.view', 'permissions.manage', 'users.manage',
+    'settings.view', 'settings.manage',
+  ])
+
+  const accPerms = JSON.stringify([
+    'dashboard.view', 'accounting.view', 'accounting.create', 'accounting.edit',
+    'customers.view', 'suppliers.view', 'treasury.view', 'treasury.create',
+    'reports.view', 'reports.export',
+  ])
+
+  const salesPerms = JSON.stringify([
+    'dashboard.view', 'customers.view', 'customers.create', 'customers.edit',
+    'sales.view', 'sales.create', 'sales.edit', 'pos.use',
+    'inventory.view', 'representatives.view',
+  ])
+
+  await db.user.create({ data: { email: 'admin@osa-erp.com', name: 'المدير العام', password: adminPass, role: 'ADMIN', branchId: branch1.id, permissions: allPerms, twoFA: true } })
+  await db.user.create({ data: { email: 'accountant@osa-erp.com', name: 'المحاسب', password: accPass, role: 'ACCOUNTANT', branchId: branch1.id, permissions: accPerms } })
+  await db.user.create({ data: { email: 'sales@osa-erp.com', name: 'مسؤول المبيعات', password: salesPass, role: 'SALES', branchId: branch1.id, permissions: salesPerms } })
+
+  // ============== Cost Centers ==============
   await db.costCenter.create({ data: { code: 'CC-01', name: 'الإدارة العامة' } })
   await db.costCenter.create({ data: { code: 'CC-02', name: 'المبيعات' } })
   await db.costCenter.create({ data: { code: 'CC-03', name: 'المشتريات' } })
   await db.costCenter.create({ data: { code: 'CC-04', name: 'الموارد البشرية' } })
 
-  console.log('✅ Seed completed!')
+  console.log('✅ Seed v2 completed!')
+  console.log('   Login: admin@osa-erp.com / admin123')
+  console.log('   Login: accountant@osa-erp.com / acc123')
+  console.log('   Login: sales@osa-erp.com / sales123')
 }
 
 main()

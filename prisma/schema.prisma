@@ -389,15 +389,18 @@ model Leave {
 
 // ==================== Users / Auth ====================
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      String   @default("USER") // ADMIN, ACCOUNTANT, SALES, HR, USER
-  branchId  String?
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  auditLogs AuditLog[]
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  password    String
+  role        String   @default("USER") // ADMIN, ACCOUNTANT, SALES, HR, USER
+  branchId    String?
+  permissions String   @default("[]") // JSON array of permission keys
+  twoFA       Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  lastLogin   DateTime?
+  createdAt   DateTime @default(now())
+  auditLogs   AuditLog[]
 }
 
 model AuditLog {
