@@ -22,13 +22,15 @@ import { Permissions } from '@/components/erp/modules/permissions'
 import { SettingsView } from '@/components/erp/modules/settings'
 import { Currencies } from '@/components/erp/modules/currencies'
 import { Profitability } from '@/components/erp/modules/profitability'
+import { LandingPage } from '@/components/landing'
 import { ShieldAlert } from 'lucide-react'
 
 function MainContent() {
   const { activeModule, sidebarOpen, lang, user, loadingAuth, hasPermission } = useApp()
 
+  // If not logged in → show Landing Page (instead of login form)
   if (loadingAuth) return <Loading label={lang === 'ar' ? 'جاري التحميل...' : 'Loading...'} />
-  if (!user) return <Login />
+  if (!user) return <LandingPage />
 
   const modules: Record<string, { perm: string; component: React.ReactNode }> = {
     dashboard: { perm: 'dashboard.view', component: <Dashboard /> },
@@ -77,7 +79,7 @@ function MainContent() {
           )}
         </main>
         <footer className="border-t border-border bg-card/50 px-6 py-4 text-center text-xs text-muted-foreground">
-          <p>Osa ERP © 2026 • {lang === 'ar' ? 'نظام إدارة المؤسسات المتكامل' : 'Enterprise Resource Planning System'}<span className="mx-2">•</span><span>v2.0.0</span></p>
+          <p>Osa ERP © {new Date().getFullYear()} • {lang === 'ar' ? 'نظام إدارة المؤسسات المتكامل' : 'Enterprise Resource Planning System'}<span className="mx-2">•</span><span>v3.0.0</span></p>
         </footer>
       </div>
     </div>

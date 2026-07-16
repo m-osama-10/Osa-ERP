@@ -156,37 +156,39 @@ model Supplier {
 
 // ==================== Invoices / Sales / Purchases ====================
 model Invoice {
-  id          String   @id @default(cuid())
-  invoiceNo   String   @unique
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id])
-  date        DateTime
-  dueDate     DateTime?
-  subtotal    Float    @default(0)
-  discount    Float    @default(0)
-  taxRate     Float    @default(15)
-  taxAmount   Float    @default(0)
-  total       Float    @default(0)
-  paidAmount  Float    @default(0)
-  status      String   @default("UNPAID") // PAID, UNPAID, PARTIAL, OVERDUE
-  type        String   @default("SALES") // SALES, POS, QUOTE, RETURN
-  notes       String?
-  branchId    String?
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  items       InvoiceItem[]
+  id            String   @id @default(cuid())
+  invoiceNo     String   @unique
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  date          DateTime
+  dueDate       DateTime?
+  subtotal      Float    @default(0)
+  discount      Float    @default(0)
+  discountType  String   @default("FIXED") // FIXED (amount) or PERCENT
+  taxRate       Float    @default(14)
+  taxAmount     Float    @default(0)
+  total         Float    @default(0)
+  paidAmount    Float    @default(0)
+  status        String   @default("UNPAID") // PAID, UNPAID, PARTIAL, OVERDUE
+  type          String   @default("SALES") // SALES, POS, QUOTE, RETURN
+  notes         String?
+  branchId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  items         InvoiceItem[]
 }
 
 model InvoiceItem {
-  id        String  @id @default(cuid())
-  invoiceId String
-  invoice   Invoice @relation(fields: [invoiceId], references: [id])
-  itemId    String
-  item      Item    @relation(fields: [itemId], references: [id])
-  quantity  Float
-  price     Float
-  discount  Float   @default(0)
-  total     Float
+  id            String  @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice @relation(fields: [invoiceId], references: [id])
+  itemId        String
+  item          Item    @relation(fields: [itemId], references: [id])
+  quantity      Float
+  price         Float
+  discount      Float   @default(0)
+  discountType  String  @default("FIXED") // FIXED or PERCENT
+  total         Float
 }
 
 model Purchase {

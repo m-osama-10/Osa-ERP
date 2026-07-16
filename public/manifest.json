@@ -1,0 +1,27 @@
+{
+  "name": "Osa ERP — نظام إدارة المؤسسات المتكامل",
+  "short_name": "Osa ERP",
+  "description": "نظام ERP متكامل للمحاسبة والمبيعات والمخازن والموارد البشرية",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d9488",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/osa-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/osa-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"]
+}

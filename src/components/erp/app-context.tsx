@@ -4,7 +4,7 @@ import * as React from 'react'
 
 type Lang = 'ar' | 'en'
 type Theme = 'light' | 'dark'
-type CurrencyCode = 'EGP' | 'USD' | 'SAR'
+type CurrencyCode = 'EGP' // Unified to Egyptian Pound only
 
 type User = {
   id: string
@@ -104,29 +104,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const baseCurrency: CurrencyCode = 'EGP'
 
-  const convertAmount = React.useCallback((amount: number, from: CurrencyCode, to?: CurrencyCode) => {
-    const target = to || displayCurrency
-    if (from === target) return amount
-    // Try direct rate
-    const direct = exchangeRates[`${from}_${target}`]
-    if (direct) return amount * direct
-    // Try via base (EGP)
-    const toBase = exchangeRates[`${from}_EGP`]
-    const fromBase = exchangeRates[`EGP_${target}`]
-    if (toBase && fromBase) return amount * toBase * fromBase
-    // Fallback approximations if rates missing
-    const fallback: Record<string, number> = { 'EGP_USD': 1/48, 'USD_EGP': 48, 'EGP_SAR': 1/12.8, 'SAR_EGP': 12.8, 'USD_SAR': 3.75, 'SAR_USD': 1/3.75 }
-    const f = fallback[`${from}_${target}`]
-    return f ? amount * f : amount
-  }, [displayCurrency, exchangeRates])
+  const convertAmount = React.useCallback((amount: number, _from?: CurrencyCode, _to?: CurrencyCode) => {
+    // EGP only — no conversion needed
+    return amount
+  }, [])
 
-  const formatMoney = React.useCallback((amount: number, from?: CurrencyCode) => {
-    const converted = convertAmount(amount, (from || baseCurrency) as CurrencyCode, displayCurrency)
-    const symbols: Record<CurrencyCode, string> = { EGP: 'ج.م', USD: '$', SAR: 'ر.س' }
-    const locales: Record<CurrencyCode, string> = { EGP: 'ar-EG', USD: 'en-US', SAR: 'ar-SA' }
-    const num = new Intl.NumberFormat(locales[displayCurrency], { maximumFractionDigits: 2 }).format(converted)
-    return displayCurrency === 'USD' ? `$${num}` : `${num} ${symbols[displayCurrency]}`
-  }, [convertAmount, displayCurrency])
+  const formatMoney = React.useCallback((amount: number, _from?: CurrencyCode) => {
+    // Always EGP
+    const num = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(amount)
+    return `${num} ج.م`
+  }, [])
 
   const hasPermission = React.useCallback((perm: string) => {
     if (!user) return false

@@ -69,7 +69,6 @@ function CompanySettings() {
             <SelectContent>
               <SelectItem value="EGP">ج.م - جنيه مصري</SelectItem>
               <SelectItem value="USD">$ - دولار أمريكي</SelectItem>
-              <SelectItem value="SAR">ر.س - ريال سعودي</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -143,10 +142,9 @@ function CurrenciesSettings() {
       <div className="mb-4 flex items-center gap-2"><Coins className="h-5 w-5 text-primary" /><h3 className="text-lg font-bold">{lang === 'ar' ? 'إعدادات العملات' : 'Currency Settings'}</h3></div>
       <div className="rounded-xl bg-primary/10 p-4">
         <p className="text-sm font-medium mb-2">{lang === 'ar' ? 'العملات المدعومة' : 'Supported Currencies'}</p>
-        <div className="grid grid-cols-3 gap-3 mt-3">
+        <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="rounded-lg bg-background p-3 text-center"><p className="text-2xl font-bold text-emerald-600">ج.م</p><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'جنيه مصري (أساسية)' : 'EGP (base)'}</p></div>
           <div className="rounded-lg bg-background p-3 text-center"><p className="text-2xl font-bold text-blue-600">$</p><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'دولار أمريكي' : 'USD'}</p></div>
-          <div className="rounded-lg bg-background p-3 text-center"><p className="text-2xl font-bold text-amber-600">ر.س</p><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'ريال سعودي' : 'SAR'}</p></div>
         </div>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">

@@ -9,7 +9,7 @@ import { BarChart3, TrendingUp, Users, Package, DollarSign, Award } from 'lucide
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadialBarChart, RadialBar } from 'recharts'
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n)
 }
 
 export function Reports() {

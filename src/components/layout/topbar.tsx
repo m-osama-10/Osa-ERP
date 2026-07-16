@@ -3,13 +3,12 @@
 import * as React from 'react'
 import { useApp, t } from '@/components/erp/app-context'
 import { Button } from '@/components/ui/button'
-import { Bell, Moon, Sun, Languages, Search, Menu, LogOut, Coins, Check } from 'lucide-react'
+import { Bell, Moon, Sun, Languages, Search, Menu, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function TopBar() {
-  const { lang, setLang, theme, toggleTheme, activeModule, setSidebarOpen, user, setUser, displayCurrency, setDisplayCurrency } = useApp()
+  const { lang, setLang, theme, toggleTheme, activeModule, setSidebarOpen, user, setUser } = useApp()
   const [notifOpen, setNotifOpen] = React.useState(false)
-  const [curOpen, setCurOpen] = React.useState(false)
   const [userOpen, setUserOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<any[]>([])
   const [unreadCount, setUnreadCount] = React.useState(0)
@@ -38,12 +37,6 @@ export function TopBar() {
     toast.success(lang === 'ar' ? 'تم تسجيل الخروج' : 'Logged out')
   }
 
-  const currencies = [
-    { code: 'EGP', symbol: 'ج.م', label: lang === 'ar' ? 'جنيه مصري' : 'Egyptian Pound' },
-    { code: 'USD', symbol: '$', label: lang === 'ar' ? 'دولار أمريكي' : 'US Dollar' },
-    { code: 'SAR', symbol: 'ر.س', label: lang === 'ar' ? 'ريال سعودي' : 'Saudi Riyal' },
-  ]
-
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md lg:px-6">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5" /></Button>
@@ -65,30 +58,6 @@ export function TopBar() {
         />
       </div>
 
-      {/* Currency selector */}
-      <div className="relative">
-        <Button variant="ghost" size="sm" onClick={() => { setCurOpen(o => !o); setNotifOpen(false); setUserOpen(false) }} className="gap-1.5">
-          <Coins className="h-4 w-4" />
-          <span className="font-mono font-bold">{displayCurrency}</span>
-        </Button>
-        {curOpen && (
-          <div className="absolute top-12 end-0 z-50 w-52 rounded-xl border border-border bg-card shadow-xl p-1">
-            <p className="px-3 py-2 text-xs font-semibold text-muted-foreground">{t(lang, 'displayCurrency')}</p>
-            {currencies.map(c => (
-              <button
-                key={c.code}
-                onClick={() => { setDisplayCurrency(c.code as any); setCurOpen(false); toast.success(lang === 'ar' ? `تم التحويل إلى ${c.label}` : `Switched to ${c.label}`) }}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${displayCurrency === c.code ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted'}`}
-              >
-                <span className="flex items-center gap-2"><span className="font-bold w-6">{c.symbol}</span>{c.label}</span>
-                <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
-                {displayCurrency === c.code && <Check className="h-3 w-3 text-primary" />}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Language */}
       <Button variant="ghost" size="icon" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} title={lang === 'ar' ? 'English' : 'العربية'}>
         <Languages className="h-5 w-5" />
@@ -101,7 +70,7 @@ export function TopBar() {
 
       {/* Notifications */}
       <div className="relative">
-        <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(o => !o); setCurOpen(false); setUserOpen(false) }} className="relative">
+        <Button variant="ghost" size="icon" onClick={() => { setNotifOpen(o => !o); setUserOpen(false) }} className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{unreadCount}</span>}
         </Button>
@@ -128,7 +97,7 @@ export function TopBar() {
 
       {/* User menu */}
       <div className="relative">
-        <button onClick={() => { setUserOpen(o => !o); setNotifOpen(false); setCurOpen(false) }} className="grid h-9 w-9 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+        <button onClick={() => { setUserOpen(o => !o); setNotifOpen(false) }} className="grid h-9 w-9 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {user?.name?.charAt(0) || 'م'}
         </button>
         {userOpen && (

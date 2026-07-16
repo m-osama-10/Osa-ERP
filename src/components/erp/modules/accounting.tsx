@@ -53,11 +53,11 @@ const typeLabels: Record<string, { ar: string; en: string }> = {
 }
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 2 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n)
 }
 
 function formatDate(s: string) {
-  return new Date(s).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(s).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 export function Accounting() {

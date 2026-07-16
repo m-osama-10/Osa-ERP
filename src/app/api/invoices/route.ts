@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth
 
   const body = await req.json()
-  const { customerId, date, dueDate, items, discount, notes, type, paidAmount } = body
+  const { customerId, date, dueDate, items, discount, discountType, notes, type, paidAmount } = body
 
   if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'العميل والأصناف مطلوبة' }, { status: 400 })
@@ -29,7 +29,13 @@ export async function POST(req: NextRequest) {
   const settings = settingRow ? JSON.parse(settingRow.value) : { taxRate: 14 }
 
   const subtotal = items.reduce((s: number, it: any) => s + it.total, 0)
-  const discountAmount = Math.max(0, discount || 0)
+  // Apply discount: FIXED (amount) or PERCENT (%)
+  let discountAmount = 0
+  if (discountType === 'PERCENT') {
+    discountAmount = subtotal * (Math.min(Math.max(discount || 0, 0), 100) / 100)
+  } else {
+    discountAmount = Math.max(0, Math.min(discount || 0, subtotal))
+  }
   const taxableAmount = subtotal - discountAmount
   const taxRate = settings.taxRate || 14
   const taxAmount = taxableAmount * (taxRate / 100)
@@ -71,6 +77,7 @@ export async function POST(req: NextRequest) {
           dueDate: dueDate ? new Date(dueDate) : null,
           subtotal,
           discount: discountAmount,
+          discountType: discountType || 'FIXED',
           taxRate,
           taxAmount,
           total,
@@ -86,6 +93,7 @@ export async function POST(req: NextRequest) {
                 quantity: it.quantity,
                 price: it.price,
                 discount: it.discount || 0,
+                discountType: it.discountType || 'FIXED',
                 total: it.total,
               }
             })

@@ -46,9 +46,9 @@ type Purchase = {
 }
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n) + ' ج.م'
 }
-function formatDate(s: string) { return new Date(s).toLocaleDateString('ar-SA') }
+function formatDate(s: string) { return new Date(s).toLocaleDateString('ar-EG') }
 
 const statusVariants: Record<string, any> = {
   PAID: 'default',
@@ -160,9 +160,16 @@ function InvoiceDialog({ open, onClose, onSaved }: { open: boolean; onClose: () 
     fetch('/api/items').then(r => r.json()).then(setItems)
   }, [])
 
+  const [discount, setDiscount] = React.useState(0)
+  const [discountType, setDiscountType] = React.useState<'FIXED' | 'PERCENT'>('FIXED')
+
   const subtotal = lines.reduce((s, l) => s + l.total, 0)
-  const taxAmount = subtotal * 0.15
-  const total = subtotal + taxAmount
+  const discountAmount = discountType === 'PERCENT'
+    ? subtotal * (Math.min(Math.max(discount, 0), 100) / 100)
+    : Math.max(0, Math.min(discount, subtotal))
+  const taxableAmount = subtotal - discountAmount
+  const taxAmount = taxableAmount * 0.14
+  const total = taxableAmount + taxAmount
 
   const addLine = () => setLines([...lines, { itemId: '', quantity: 1, price: 0, total: 0 }])
   const updateLine = (i: number, patch: any) => {
@@ -180,20 +187,28 @@ function InvoiceDialog({ open, onClose, onSaved }: { open: boolean; onClose: () 
   }
   const removeLine = (i: number) => setLines(lines.filter((_, j) => j !== i))
 
+  const [submitting, setSubmitting] = React.useState(false)
   const submit = async () => {
+    if (submitting) return
     if (!customerId || lines.length === 0) {
       toast.error(lang === 'ar' ? 'اختر عميل وأضف أصناف' : 'Select customer and items')
       return
     }
-    const res = await fetch('/api/invoices', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, date, items: lines.filter(l => l.itemId) }),
-    })
-    if (res.ok) {
-      toast.success(lang === 'ar' ? 'تم إنشاء الفاتورة' : 'Invoice created')
-      setCustomerId(''); setLines([])
-      onSaved(); onClose()
-    }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/invoices', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, date, items: lines.filter(l => l.itemId), discount, discountType }),
+      })
+      if (res.ok) {
+        toast.success(lang === 'ar' ? 'تم إنشاء الفاتورة' : 'Invoice created')
+        setCustomerId(''); setLines([]); setDiscount(0); setDiscountType('FIXED')
+        onSaved(); onClose()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || (lang === 'ar' ? 'فشل الإنشاء' : 'Failed'))
+      }
+    } finally { setSubmitting(false) }
   }
 
   return (
@@ -243,17 +258,51 @@ function InvoiceDialog({ open, onClose, onSaved }: { open: boolean; onClose: () 
           </div>
           <Button variant="outline" size="sm" onClick={addLine}><Plus className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'إضافة صنف' : 'Add item'}</Button>
 
+          {/* Discount section */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="font-semibold">{lang === 'ar' ? 'الخصم' : 'Discount'}</Label>
+              <div className="flex items-center gap-2">
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                  value={discountType}
+                  onChange={e => setDiscountType(e.target.value as 'FIXED' | 'PERCENT')}
+                >
+                  <option value="FIXED">{lang === 'ar' ? 'مبلغ ثابت' : 'Fixed Amount'}</option>
+                  <option value="PERCENT">{lang === 'ar' ? 'نسبة %' : 'Percentage %'}</option>
+                </select>
+                <Input
+                  type="number"
+                  className="h-8 w-28 text-end"
+                  value={discount}
+                  onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                  min="0"
+                  max={discountType === 'PERCENT' ? 100 : undefined}
+                />
+              </div>
+            </div>
+            {discountAmount > 0 && (
+              <p className="text-xs text-primary">
+                {lang === 'ar' ? 'قيمة الخصم: ' : 'Discount amount: '}
+                <span className="font-bold">{formatCurrency(discountAmount)}</span>
+              </p>
+            )}
+          </div>
+
           <div className="flex justify-end">
-            <div className="w-64 space-y-2 rounded-xl border border-border p-4 bg-muted/30">
+            <div className="w-72 space-y-2 rounded-xl border border-border p-4 bg-muted/30">
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'المجموع' : 'Subtotal'}</span><span className="font-medium">{formatCurrency(subtotal)}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'ضريبة 15%' : 'VAT 15%'}</span><span className="font-medium">{formatCurrency(taxAmount)}</span></div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-red-600"><span>{lang === 'ar' ? 'الخصم' : 'Discount'}</span><span>- {formatCurrency(discountAmount)}</span></div>
+              )}
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'ضريبة 14%' : 'VAT 14%'}</span><span className="font-medium">{formatCurrency(taxAmount)}</span></div>
               <div className="flex justify-between border-t border-border pt-2 font-bold text-base"><span>{t(lang, 'total')}</span><span className="text-primary">{formatCurrency(total)}</span></div>
             </div>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t(lang, 'cancel')}</Button>
-          <Button onClick={submit}>{t(lang, 'save')}</Button>
+          <Button onClick={submit} disabled={submitting}>{submitting ? '...' : t(lang, 'save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -285,10 +334,17 @@ function POS() {
     return walkIn
   }
 
+  const [discount, setDiscount] = React.useState(0)
+  const [discountType, setDiscountType] = React.useState<'FIXED' | 'PERCENT'>('FIXED')
+
   const filtered = items.filter(i => i.name.includes(search) || i.sku.toLowerCase().includes(search.toLowerCase()))
   const subtotal = cart.reduce((s, c) => s + c.price * c.qty, 0)
-  const tax = subtotal * 0.15
-  const total = subtotal + tax
+  const discountAmount = discountType === 'PERCENT'
+    ? subtotal * (Math.min(Math.max(discount, 0), 100) / 100)
+    : Math.max(0, Math.min(discount, subtotal))
+  const taxableAmount = subtotal - discountAmount
+  const tax = taxableAmount * 0.14
+  const total = taxableAmount + tax
 
   const addToCart = (item: any) => {
     setCart(prev => {
@@ -356,7 +412,30 @@ function POS() {
         </div>
         <div className="space-y-2 border-t border-border pt-4">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'المجموع' : 'Subtotal'}</span><span>{formatCurrency(subtotal)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT 15%</span><span>{formatCurrency(tax)}</span></div>
+          {/* Discount input */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground flex-1">{lang === 'ar' ? 'خصم' : 'Discount'}</span>
+            <select
+              className="h-7 rounded border border-input bg-background px-1 text-xs"
+              value={discountType}
+              onChange={e => setDiscountType(e.target.value as 'FIXED' | 'PERCENT')}
+            >
+              <option value="FIXED">ج.م</option>
+              <option value="PERCENT">%</option>
+            </select>
+            <Input
+              type="number"
+              className="h-7 w-20 text-end text-xs"
+              value={discount}
+              onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+              min="0"
+              max={discountType === 'PERCENT' ? 100 : undefined}
+            />
+          </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-red-600"><span>{lang === 'ar' ? 'قيمة الخصم' : 'Discount'}</span><span>- {formatCurrency(discountAmount)}</span></div>
+          )}
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT 14%</span><span>{formatCurrency(tax)}</span></div>
           <div className="flex justify-between text-lg font-bold border-t border-border pt-2"><span>{t(lang, 'total')}</span><span className="text-primary">{formatCurrency(total)}</span></div>
           <Button className="w-full h-12 mt-2 text-base" disabled={cart.length === 0 || completing} onClick={async () => {
             if (completing) return
@@ -372,6 +451,8 @@ function POS() {
                   date: new Date().toISOString(),
                   type: 'POS',
                   paidAmount: total, // POS = paid immediately
+                  discount,
+                  discountType,
                   items: cart.map(c => ({ itemId: c.id, quantity: c.qty, price: c.price, total: c.price * c.qty })),
                 })
               })
@@ -379,6 +460,8 @@ function POS() {
                 const inv = await res.json()
                 toast.success(lang === 'ar' ? `تم البيع - ${inv.invoiceNo}` : `Sale completed - ${inv.invoiceNo}`)
                 setCart([])
+                setDiscount(0)
+                setDiscountType('FIXED')
               } else {
                 const err = await res.json()
                 toast.error(err.error || (lang === 'ar' ? 'فشل البيع' : 'Sale failed'))

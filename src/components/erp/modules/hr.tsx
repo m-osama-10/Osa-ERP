@@ -38,10 +38,10 @@ type Attendance = {
 }
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n)
 }
-function formatDate(s: string) { return new Date(s).toLocaleDateString('ar-SA') }
-function formatTime(s: string | null) { return s ? new Date(s).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '-' }
+function formatDate(s: string) { return new Date(s).toLocaleDateString('ar-EG') }
+function formatTime(s: string | null) { return s ? new Date(s).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '-' }
 
 export function HR() {
   const { lang } = useApp()
@@ -296,7 +296,7 @@ function PayrollView() {
   React.useEffect(() => { fetch('/api/employees').then(r => r.json()).then(setEmployees) }, [])
 
   const totalPayroll = employees.reduce((s, e) => s + e.basicSalary + e.allowances, 0)
-  const currentMonth = new Date().toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })
+  const currentMonth = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })
 
   return (
     <Card className="p-6">

@@ -8,7 +8,13 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/api/'],
       },
+      {
+        userAgent: 'Googlebot',
+        allow: '/',
+        disallow: ['/api/'],
+      },
     ],
-    sitemap: 'https://osa-erp.example.com/sitemap.xml',
+    sitemap: 'https://osa-erp.com/sitemap.xml',
+    host: 'https://osa-erp.com',
   }
 }

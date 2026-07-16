@@ -38,7 +38,7 @@ export function Representatives() {
         <Card className="p-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/15 text-primary"><Bike className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'المندوبين' : 'Reps'}</p><p className="text-xl font-bold">{reps.length}</p></div></div></Card>
         <Card className="p-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-600"><Wifi className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'متصل' : 'Online'}</p><p className="text-xl font-bold">{reps.filter(r => r.status === 'online').length}</p></div></div></Card>
         <Card className="p-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-100 text-blue-600"><Navigation className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'إجمالي الزيارات' : 'Total Visits'}</p><p className="text-xl font-bold">{reps.reduce((s, r) => s + r.visits, 0)}</p></div></div></Card>
-        <Card className="p-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-amber-100 text-amber-600"><DollarSign className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'إجمالي التحصيل' : 'Total Collected'}</p><p className="text-xl font-bold">{new Intl.NumberFormat('ar-SA').format(reps.reduce((s, r) => s + r.collected, 0))}</p></div></div></Card>
+        <Card className="p-4"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-amber-100 text-amber-600"><DollarSign className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'إجمالي التحصيل' : 'Total Collected'}</p><p className="text-xl font-bold">{new Intl.NumberFormat('ar-EG').format(reps.reduce((s, r) => s + r.collected, 0))}</p></div></div></Card>
       </div>
 
       {/* Features Banner */}
@@ -99,7 +99,7 @@ export function Representatives() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{lang === 'ar' ? 'التحصيل' : 'Collected'}</span>
-                  <span className="font-bold text-primary">{new Intl.NumberFormat('ar-SA').format(r.collected)} ر.س</span>
+                  <span className="font-bold text-primary">{new Intl.NumberFormat('ar-EG').format(r.collected)} ج.م</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{lang === 'ar' ? 'آخر مزامنة' : 'Last sync'}</span>

@@ -32,11 +32,11 @@ type DashboardData = {
 }
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n)
 }
 
 function formatNumber(n: number) {
-  return new Intl.NumberFormat('ar-SA').format(n)
+  return new Intl.NumberFormat('ar-EG').format(n)
 }
 
 function KpiCard({ title, value, icon: Icon, trend, color, langLabel }: {

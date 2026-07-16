@@ -74,7 +74,7 @@ export function Production() {
                   <td className="px-4 py-3 font-medium">{o.product}</td>
                   <td className="px-4 py-3 text-end">{o.qty}</td>
                   <td className="px-4 py-3 text-muted-foreground">{o.date}</td>
-                  <td className="px-4 py-3 text-end font-semibold">{new Intl.NumberFormat('ar-SA').format(o.cost)} ر.س</td>
+                  <td className="px-4 py-3 text-end font-semibold">{new Intl.NumberFormat('ar-EG').format(o.cost)} ج.م</td>
                   <td className="px-4 py-3 text-center">
                     <Badge variant={o.status === 'مكتمل' ? 'default' : o.status === 'قيد التنفيذ' ? 'secondary' : 'outline'}>{o.status}</Badge>
                   </td>
@@ -102,7 +102,7 @@ export function Production() {
               </div>
               <div className="flex items-center justify-between border-t border-border pt-3">
                 <p className="text-sm text-muted-foreground">{lang === 'ar' ? 'إجمالي التكلفة' : 'Total Cost'}</p>
-                <p className="text-xl font-bold text-primary">{new Intl.NumberFormat('ar-SA').format(b.totalCost)} ر.س</p>
+                <p className="text-xl font-bold text-primary">{new Intl.NumberFormat('ar-EG').format(b.totalCost)} ج.م</p>
               </div>
             </div>
           ))}

@@ -251,12 +251,12 @@ async function main() {
     })
   }
 
-  // ============== Users with hashed passwords (strong passwords) ==============
-  const adminPass = await bcrypt.hash('Admin@123', 10)
-  const accPass = await bcrypt.hash('Account@123', 10)
-  const salesPass = await bcrypt.hash('Sales@123', 10)
+  // ============== Users — Production Setup ==============
+  // Main admin account: Mohamed Osama (the owner)
+  const ownerPass = await bcrypt.hash('Osama@2026', 10)
+  const demoPass = await bcrypt.hash('Demo@2026', 10)
 
-  // All permissions for admin
+  // All permissions for admin (Mohamed Osama — full access)
   const allPerms = JSON.stringify([
     'dashboard.view', 'accounting.view', 'accounting.create', 'accounting.edit', 'accounting.delete',
     'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
@@ -270,24 +270,53 @@ async function main() {
     'reports.view', 'reports.export',
     'branches.view', 'branches.manage',
     'permissions.view', 'permissions.manage', 'users.manage',
+    'currencies.view', 'currencies.manage',
+    'profitability.view', 'profitability.export',
     'settings.view', 'settings.manage',
   ])
 
-  const accPerms = JSON.stringify([
-    'dashboard.view', 'accounting.view', 'accounting.create', 'accounting.edit',
-    'customers.view', 'suppliers.view', 'treasury.view', 'treasury.create',
-    'reports.view', 'reports.export',
-  ])
-
-  const salesPerms = JSON.stringify([
-    'dashboard.view', 'customers.view', 'customers.create', 'customers.edit',
+  // Demo account — read-only permissions for landing page visitors
+  const demoPerms = JSON.stringify([
+    'dashboard.view',
+    'accounting.view',
+    'customers.view', 'customers.create', 'customers.edit',
+    'suppliers.view',
+    'treasury.view',
+    'inventory.view', 'inventory.create', 'inventory.edit',
+    'hr.view',
     'sales.view', 'sales.create', 'sales.edit', 'pos.use',
-    'inventory.view', 'representatives.view',
+    'representatives.view',
+    'reports.view', 'reports.export',
+    'branches.view',
+    'currencies.view',
+    'profitability.view',
   ])
 
-  await db.user.create({ data: { email: 'admin@osa-erp.com', name: 'المدير العام', password: adminPass, role: 'ADMIN', branchId: branch1.id, permissions: allPerms, twoFA: true } })
-  await db.user.create({ data: { email: 'accountant@osa-erp.com', name: 'المحاسب', password: accPass, role: 'ACCOUNTANT', branchId: branch1.id, permissions: accPerms } })
-  await db.user.create({ data: { email: 'sales@osa-erp.com', name: 'مسؤول المبيعات', password: salesPass, role: 'SALES', branchId: branch1.id, permissions: salesPerms } })
+  // Owner account — Mohamed Osama
+  await db.user.create({
+    data: {
+      email: 'mohamed.osama@osa-erp.com',
+      name: 'محمد أسامة',
+      password: ownerPass,
+      role: 'ADMIN',
+      branchId: branch1.id,
+      permissions: allPerms,
+      twoFA: true,
+    }
+  })
+
+  // Demo account for landing page visitors (limited, no destructive perms)
+  await db.user.create({
+    data: {
+      email: 'demo@osa-erp.com',
+      name: 'حساب تجريبي',
+      password: demoPass,
+      role: 'USER',
+      branchId: branch1.id,
+      permissions: demoPerms,
+      twoFA: false,
+    }
+  })
 
   // ============== Cost Centers ==============
   await db.costCenter.create({ data: { code: 'CC-01', name: 'الإدارة العامة' } })
@@ -295,10 +324,25 @@ async function main() {
   await db.costCenter.create({ data: { code: 'CC-03', name: 'المشتريات' } })
   await db.costCenter.create({ data: { code: 'CC-04', name: 'الموارد البشرية' } })
 
-  console.log('✅ Seed v2.1 completed!')
-  console.log('   Login: admin@osa-erp.com / Admin@123')
-  console.log('   Login: accountant@osa-erp.com / Account@123')
-  console.log('   Login: sales@osa-erp.com / Sales@123')
+  // ============== Default System Settings (persisted in DB) ==============
+  await db.setting.create({
+    data: {
+      key: 'system',
+      value: JSON.stringify({
+        taxRate: 14,
+        taxNumber: '300000000000003',
+        currency: 'EGP',
+        email: { smtpHost: '', smtpPort: 587, smtpUser: '', smtpPassword: '', fromEmail: '', fromName: 'Osa ERP', secure: false },
+        printer: { paperSize: 'A4', orientation: 'portrait', copies: 1, showLogo: true, showSignature: false },
+        invoice: { prefix: 'INV-', startNumber: 1000, footerText: 'شكراً لتعاملكم معنا', termsConditions: 'البضاعة المباعة لا ترد ولا تستبدل بعد 7 أيام', showQR: true },
+        notifications: { lowStockThreshold: 10, invoiceDueDays: 30, enableEmailAlerts: false, enableInAppAlerts: true },
+      })
+    }
+  })
+
+  console.log('✅ Seed v3.0 completed (production-ready)!')
+  console.log('   👑 Owner: mohamed.osama@osa-erp.com / Osama@2026')
+  console.log('   🎯 Demo:  demo@osa-erp.com / Demo@2026')
 }
 
 main()

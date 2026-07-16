@@ -9,8 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
-const isDev = process.env.NODE_ENV === 'development'
-
 export function Login() {
   const { lang, setUser } = useApp()
   const [email, setEmail] = React.useState('')
@@ -110,23 +108,18 @@ export function Login() {
             </Button>
           </form>
 
-          {/* Demo credentials only in development */}
-          {isDev && (
-            <div className="mt-6 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-4 text-xs">
-              <p className="font-semibold mb-2 text-amber-700 dark:text-amber-400">⚠ {lang === 'ar' ? 'بيانات تجريبية (dev only)' : 'Demo (dev only)'}</p>
-              <div className="space-y-1.5" dir="ltr">
-                <button type="button" onClick={() => { setEmail('admin@osa-erp.com'); setPassword('Admin@123') }} className="block w-full text-start hover:text-primary transition-colors">
-                  👑 admin@osa-erp.com / Admin@123
-                </button>
-                <button type="button" onClick={() => { setEmail('accountant@osa-erp.com'); setPassword('Account@123') }} className="block w-full text-start hover:text-primary transition-colors">
-                  📊 accountant@osa-erp.com / Account@123
-                </button>
-                <button type="button" onClick={() => { setEmail('sales@osa-erp.com'); setPassword('Sales@123') }} className="block w-full text-start hover:text-primary transition-colors">
-                  💰 sales@osa-erp.com / Sales@123
-                </button>
-              </div>
+          {/* Demo credentials — shown to all visitors for live demo */}
+          <div className="mt-6 rounded-xl bg-primary/5 border border-primary/20 p-4 text-xs">
+            <p className="font-semibold mb-2 text-primary">🎯 {lang === 'ar' ? 'حساب تجريبي للزوار' : 'Demo Account'}</p>
+            <div className="space-y-1.5" dir="ltr">
+              <button type="button" onClick={() => { setEmail('demo@osa-erp.com'); setPassword('Demo@2026') }} className="block w-full text-start hover:text-primary transition-colors">
+                👤 demo@osa-erp.com / Demo@2026
+              </button>
             </div>
-          )}
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              {lang === 'ar' ? 'هذا الحساب للتجربة فقط — البيانات تُعاد ضبطها دورياً' : 'Demo only — data resets periodically'}
+            </p>
+          </div>
         </Card>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">

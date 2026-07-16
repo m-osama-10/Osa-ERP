@@ -11,7 +11,7 @@ type Cash = { id: string; code: string; name: string; balance: number; currency:
 type Bank = { id: string; code: string; bankName: string; accountNo: string; iban: string | null; balance: number; currency: string; isActive: boolean }
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 2 }).format(n)
 }
 
 export function Treasury() {
