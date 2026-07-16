@@ -20,8 +20,25 @@ const tajawal = Tajawal({
 
 export const metadata: Metadata = {
   title: "Osa ERP — نظام إدارة المؤسسات المتكامل",
-  description: "نظام ERP شامل للمحاسبة والمبيعات والمخازن والموارد البشرية",
-  keywords: ["ERP", "محاسبة", "فواتير", "مخزون", "موارد بشرية", "Osa ERP"],
+  description: "نظام ERP شامل للمحاسبة والمبيعات والمخازن والموارد البشرية وإدارة العملات والربحية مع تقارير PDF و Excel",
+  keywords: ["ERP", "محاسبة", "فواتير", "مخزون", "موارد بشرية", "Osa ERP", "Egypt", "EGP", "USD", "VAT"],
+  authors: [{ name: "Osa ERP" }],
+  metadataBase: new URL('https://osa-erp.example.com'),
+  alternates: { canonical: '/', languages: { 'ar': '/', 'en': '/?lang=en' } },
+  openGraph: {
+    title: "Osa ERP — نظام إدارة المؤسسات",
+    description: "نظام ERP شامل لإدارة الأعمال بالعربية والإنجليزية",
+    type: 'website',
+    locale: 'ar_EG',
+  },
+  twitter: { card: 'summary_large_image', title: 'Osa ERP', description: 'Enterprise Resource Planning System' },
+  robots: { index: true, follow: true },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

@@ -413,3 +413,24 @@ model AuditLog {
   ipAddress String?
   createdAt DateTime @default(now())
 }
+
+// ==================== Notifications ====================
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?  // null = broadcast to all
+  type      String   // INFO, WARNING, ERROR, SUCCESS
+  title     String
+  message   String
+  module    String?  // accounting, inventory, sales...
+  refType   String?  // INVOICE, ITEM, CHEQUE...
+  refId     String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ==================== Settings (key-value) ====================
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String // JSON string
+}
