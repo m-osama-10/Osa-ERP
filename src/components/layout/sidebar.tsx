@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Calculator, Users, Truck, Wallet, Package,
   Factory, UserCog, ShoppingCart, Bike, BarChart3, Building2,
-  Shield, Settings, ChevronLeft, ChevronRight, X, Coins, TrendingUp, Bell
+  Shield, Settings, ChevronLeft, ChevronRight, X, Coins, TrendingUp,
 } from 'lucide-react'
 
 type NavItem = {
@@ -14,7 +14,6 @@ type NavItem = {
   labelKey: string
   icon: React.ComponentType<{ className?: string }>
   perm: string
-  badge?: string
 }
 
 type NavGroup = {
@@ -63,7 +62,7 @@ export function Sidebar() {
     return (
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed top-4 z-50 grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform"
+        className="fixed top-4 z-50 grid h-11 w-11 place-items-center rounded-2xl gradient-primary text-primary-foreground shadow-glow hover:scale-110 transition-transform"
         style={{ [lang === 'ar' ? 'right' : 'left']: 16 } as React.CSSProperties}
         aria-label="Open sidebar"
       >
@@ -76,32 +75,48 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          'fixed inset-y-0 z-40 flex w-72 flex-col border-border bg-sidebar text-sidebar-foreground shadow-xl transition-transform duration-300',
+          'fixed inset-y-0 z-40 flex w-72 flex-col glass text-sidebar-foreground shadow-soft-xl transition-all duration-300',
           lang === 'ar' ? 'right-0 border-l' : 'left-0 border-r'
         )}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 border-b border-sidebar-border p-5">
-          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-xl font-black text-primary-foreground shadow-lg">O</div>
-          <div className="flex-1">
-            <h1 className="text-lg font-extrabold leading-tight">Osa ERP</h1>
-            <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'نظام إدارة المؤسسات' : 'Enterprise System'}</p>
+        {/* Logo / Brand — gradient header */}
+        <div className="relative overflow-hidden p-5 border-b border-sidebar-border">
+          <div className="absolute inset-0 gradient-mesh opacity-50" />
+          <div className="relative flex items-center gap-3">
+            <div className="relative">
+              <img src="/osa-logo.png" alt="Osa ERP" className="h-12 w-12 rounded-2xl object-cover shadow-soft" />
+              <div className="absolute -inset-1 rounded-2xl gradient-accent opacity-20 blur-md -z-10" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-extrabold leading-tight tracking-tight">
+                <span className="text-gradient-navy">Osa</span>{' '}
+                <span className="text-gradient">ERP</span>
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-medium tracking-wide">
+                {lang === 'ar' ? 'نظام إدارة المؤسسات' : 'Enterprise System'}
+              </p>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="grid h-8 w-8 place-items-center rounded-xl text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-sidebar-accent">
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {navGroups.map((group) => {
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4 scroll-smooth">
+          {navGroups.map((group, gIdx) => {
             const visibleItems = group.items.filter(item => hasPermission(item.perm))
             if (visibleItems.length === 0) return null
             return (
-              <div key={group.titleKey} className="mb-6">
-                <h2 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">{t(lang, group.titleKey)}</h2>
+              <div key={group.titleKey} className="mb-6 animate-fade-in" style={{ animationDelay: `${gIdx * 0.1}s` }}>
+                <h2 className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                  {t(lang, group.titleKey)}
+                </h2>
                 <div className="space-y-1">
-                  {visibleItems.map((item) => {
+                  {visibleItems.map((item, iIdx) => {
                     const isActive = activeModule === item.id
                     const Icon = item.icon
                     return (
@@ -109,13 +124,21 @@ export function Sidebar() {
                         key={item.id}
                         onClick={() => setActiveModule(item.id)}
                         className={cn(
-                          'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                          isActive ? 'bg-primary text-primary-foreground shadow-md' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          'group relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
+                          isActive
+                            ? 'gradient-primary text-primary-foreground shadow-soft hover:shadow-glow'
+                            : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1'
                         )}
+                        style={{ animationDelay: `${(gIdx * 0.1) + (iIdx * 0.03)}s` }}
                       >
-                        <Icon className={cn('h-5 w-5 shrink-0', isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground')} />
+                        <Icon className={cn(
+                          'h-5 w-5 shrink-0 transition-transform',
+                          isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground group-hover:scale-110'
+                        )} />
                         <span className="flex-1 text-start">{t(lang, item.labelKey)}</span>
-                        {isActive && <div className={cn('h-1.5 w-1.5 rounded-full bg-primary-foreground', lang === 'ar' ? 'ml-1' : 'mr-1')} />}
+                        {isActive && (
+                          <div className={cn('h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse', lang === 'ar' ? 'ml-1' : 'mr-1')} />
+                        )}
                       </button>
                     )
                   })}
@@ -127,19 +150,20 @@ export function Sidebar() {
 
         {/* User Card */}
         <div className="border-t border-sidebar-border p-3">
-          <div className="flex items-center gap-3 rounded-xl bg-sidebar-accent/50 p-3">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/15 text-primary font-bold">
+          <div className="flex items-center gap-3 rounded-2xl glass p-3 hover:shadow-soft transition-shadow">
+            <div className="grid h-11 w-11 place-items-center rounded-xl gradient-primary text-primary-foreground font-bold shadow-soft">
               {user?.name?.charAt(0) || 'م'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-semibold">{user?.name || 'مستخدم'}</p>
               <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-glow" />
           </div>
         </div>
       </aside>
 
-      <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden animate-fade-in" onClick={() => setSidebarOpen(false)} />
     </>
   )
 }

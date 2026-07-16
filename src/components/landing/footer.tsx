@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useApp } from '@/components/erp/app-context'
-import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Youtube } from 'lucide-react'
+import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Youtube, Heart } from 'lucide-react'
 
 export function Footer() {
   const { lang } = useApp()
@@ -48,43 +48,60 @@ export function Footer() {
   ]
 
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="relative border-t border-border bg-card overflow-hidden">
+      <div className="absolute inset-0 gradient-mesh opacity-30 -z-10" />
       <div className="container mx-auto px-4 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 mb-12">
-          {/* Logo + description */}
+          {/* Logo + description + contact */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <img src="/osa-logo.png" alt="Osa ERP" className="h-10 w-10 rounded-lg" />
-              <span className="text-xl font-extrabold">
-                <span className="text-primary">Osa</span> ERP
+              <img src="/osa-logo.png" alt="Osa ERP" className="h-12 w-12 rounded-2xl shadow-soft" />
+              <span className="text-2xl font-extrabold">
+                <span className="text-gradient-navy">Osa</span>{' '}
+                <span className="text-gradient">ERP</span>
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+            <p className="text-sm text-muted-foreground mb-6 max-w-xs leading-relaxed">
               {lang === 'ar'
                 ? 'نظام إدارة مؤسسات متكامل للمحاسبة والمبيعات والمخازن والموارد البشرية. مبني بأحدث التقنيات.'
                 : 'Complete enterprise management system for accounting, sales, inventory, and HR. Built with modern tech.'}
             </p>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2.5 text-sm">
+              <a href="tel:01030123052" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted group-hover:gradient-primary group-hover:text-primary-foreground transition-all">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <span dir="ltr">01030123052</span>
+              </a>
+              <a href="mailto:M.osama10@outlook.com" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted group-hover:gradient-primary group-hover:text-primary-foreground transition-all">
+                  <Mail className="h-4 w-4" />
+                </div>
+                M.osama10@outlook.com
+              </a>
+              <a href="https://Facebook.com/osa.erp" target="_blank" rel="noopener" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted group-hover:gradient-primary group-hover:text-primary-foreground transition-all">
+                  <Facebook className="h-4 w-4" />
+                </div>
+                Facebook.com/osa.erp
+              </a>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" /> info@osa-erp.com
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-4 w-4" /> +20 100 123 4567
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" /> {lang === 'ar' ? 'القاهرة، مصر' : 'Cairo, Egypt'}
+                <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                {lang === 'ar' ? 'أسيوط، مصر' : 'Asyut, Egypt'}
               </div>
             </div>
           </div>
 
           {/* Link sections */}
           {sections.map((section, i) => (
-            <div key={i}>
-              <h4 className="font-bold mb-4">{lang === 'ar' ? section.title_ar : section.title_en}</h4>
+            <div key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <h4 className="font-bold mb-4 text-base">{lang === 'ar' ? section.title_ar : section.title_en}</h4>
               <ul className="space-y-2">
                 {section.links.map((link, j) => (
                   <li key={j}>
-                    <a href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                    <a href={link.href} className="text-sm text-muted-foreground hover:text-primary transition-colors hover:underline">
                       {lang === 'ar' ? link.ar : link.en}
                     </a>
                   </li>
@@ -94,18 +111,31 @@ export function Footer() {
           ))}
         </div>
 
+        {/* Made in Egypt Banner */}
+        <div className="mb-8 rounded-2xl gradient-primary p-5 text-center text-primary-foreground shadow-soft relative overflow-hidden">
+          <div className="absolute inset-0 grid-bg opacity-20" />
+          <div className="relative flex items-center justify-center gap-3 flex-wrap">
+            <span className="text-3xl animate-float">🇪🇬</span>
+            <p className="text-lg font-bold">
+              {lang === 'ar' ? 'بكل فخر صُنع في صعيد مصر' : 'Proudly Made in Upper Egypt'}
+            </p>
+            <span className="text-3xl animate-float-slow">🇪🇬</span>
+          </div>
+          <p className="text-xs opacity-80 mt-2 relative">{lang === 'ar' ? 'أسيوط، جمهورية مصر العربية' : 'Asyut, Arab Republic of Egypt'}</p>
+        </div>
+
         <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {year} Osa ERP • {lang === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            © {year} Osa ERP • {lang === 'ar' ? 'صُنع بكل' : 'Made with'} <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500" /> {lang === 'ar' ? 'في مصر' : 'in Egypt'}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {[
               { Icon: Facebook, label: 'Facebook' },
               { Icon: Twitter, label: 'Twitter' },
               { Icon: Linkedin, label: 'LinkedIn' },
               { Icon: Youtube, label: 'YouTube' },
             ].map(({ Icon, label }, i) => (
-              <a key={i} href="#" aria-label={label} className="grid h-9 w-9 place-items-center rounded-lg border border-border hover:border-primary hover:text-primary transition-colors">
+              <a key={i} href="#" aria-label={label} className="grid h-9 w-9 place-items-center rounded-xl border border-border hover:gradient-primary hover:text-primary-foreground hover:border-transparent transition-all hover:scale-110">
                 <Icon className="h-4 w-4" />
               </a>
             ))}
