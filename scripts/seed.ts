@@ -167,7 +167,7 @@ async function main() {
     const customer = allCustomers[Math.floor(Math.random() * allCustomers.length)]
     const itemCount = Math.floor(Math.random() * 4) + 1
     let subtotal = 0
-    const itemLines = []
+    const itemLines: any[] = []
     for (let j = 0; j < itemCount; j++) {
       const item = allItems[Math.floor(Math.random() * allItems.length)]
       const qty = Math.floor(Math.random() * 5) + 1
@@ -199,7 +199,7 @@ async function main() {
     const supplier = allSuppliers[Math.floor(Math.random() * allSuppliers.length)]
     const itemCount = Math.floor(Math.random() * 3) + 1
     let subtotal = 0
-    const itemLines = []
+    const itemLines: any[] = []
     for (let j = 0; j < itemCount; j++) {
       const item = allItems[Math.floor(Math.random() * allItems.length)]
       const qty = Math.floor(Math.random() * 50) + 10
