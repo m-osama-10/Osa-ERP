@@ -264,7 +264,7 @@ async function main() {
     'treasury.view', 'treasury.create', 'treasury.edit',
     'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.delete',
     'production.view', 'production.create', 'production.edit',
-    'hr.view', 'hr.create', 'hr.edit', 'hr.delete',
+    'hr.view', 'hr.create', 'hr.edit', 'hr.delete', 'hr.salary.view',
     'sales.view', 'sales.create', 'sales.edit', 'sales.delete', 'pos.use',
     'representatives.view', 'representatives.manage',
     'reports.view', 'reports.export',

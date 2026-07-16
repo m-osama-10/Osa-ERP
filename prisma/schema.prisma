@@ -346,47 +346,108 @@ model Employee {
   department  String?
   branchId    String?
   hireDate    DateTime
-  basicSalary Float    @default(0)
-  allowances  Float    @default(0)
-  status      String   @default("ACTIVE") // ACTIVE, ON_LEAVE, RESIGNED
-  createdAt   DateTime @default(now())
-  attendances Attendance[]
-  payroll     Payroll[]
+  basicSalary    Float    @default(0)
+  allowances     Float    @default(0)
+  incentives     Float    @default(0)
+  deductions     Float    @default(0)
+  bankAccount    String?
+  photo          String?
+  files          String    @default("[]") // JSON array of file URLs
+  archived       Boolean   @default(false)
+  status         String    @default("ACTIVE") // ACTIVE, ON_LEAVE, RESIGNED, ARCHIVED
+  createdAt      DateTime  @default(now())
+  attendances    Attendance[]
+  payroll        Payroll[]
+  leaves         Leave[]
+  advances       Advance[]
+  deputations    Deputation[]
+  history        EmployeeHistory[]
 }
 
 model Attendance {
-  id         String   @id @default(cuid())
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id])
-  date       DateTime
-  checkIn    DateTime?
-  checkOut   DateTime?
-  status     String   @default("PRESENT") // PRESENT, ABSENT, LATE, LEAVE
-  notes      String?
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  workHours   Float    @default(0)
+  overtime    Float    @default(0)
+  lateMinutes Int      @default(0)
+  status      String   @default("PRESENT") // PRESENT, ABSENT, LATE, LEAVE, WEEKEND, HOLIDAY
+  notes       String?
 }
 
 model Payroll {
-  id         String   @id @default(cuid())
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id])
-  month      Int
-  year       Int
-  basicSalary Float
-  allowances  Float
-  deductions Float
-  netSalary  Float
-  status     String   @default("PENDING") // PENDING, PAID
-  paidAt     DateTime?
+  id            String    @id @default(cuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  month         Int
+  year          Int
+  basicSalary   Float
+  allowances    Float
+  incentives    Float
+  deductions    Float
+  advancesPaid  Float     @default(0)
+  overtimePay   Float     @default(0)
+  netSalary     Float
+  status        String    @default("PENDING") // PENDING, PAID
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([employeeId, month, year])
 }
 
 model Leave {
-  id         String   @id @default(cuid())
-  employeeId String
-  startDate  DateTime
-  endDate    DateTime
-  type       String   // ANNUAL, SICK, CASUAL
-  reason     String?
-  status     String   @default("PENDING")
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  days        Float    @default(1)
+  type        String   // ANNUAL, SICK, CASUAL, UNPAID
+  reason      String?
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  requestedAt DateTime @default(now())
+  approvedBy  String?
+  approvedAt  DateTime?
+}
+
+model Advance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  amount      Float
+  type        String   @default("ADVANCE") // ADVANCE, LOAN
+  installments Int     @default(1)
+  paidInstallments Int @default(0)
+  date        DateTime @default(now())
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  notes       String?
+}
+
+model Deputation {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  destination String
+  purpose     String
+  startDate   DateTime
+  endDate     DateTime
+  allowance   Float    @default(0)
+  status      String   @default("PENDING") // PENDING, APPROVED, COMPLETED
+  notes       String?
+}
+
+model EmployeeHistory {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  type        String   // HIRE, PROMOTION, PENALTY, REWARD, SALARY_CHANGE, RESIGN
+  title       String
+  description String?
+  date        DateTime @default(now())
+  amount      Float?
 }
 
 // ==================== Users / Auth ====================

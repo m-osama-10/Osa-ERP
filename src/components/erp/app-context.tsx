@@ -284,6 +284,7 @@ export const ALL_PERMISSIONS = [
   { group: 'hr', key: 'hr.create', ar: 'إضافة موظفين', en: 'Add Employees' },
   { group: 'hr', key: 'hr.edit', ar: 'تعديل الموظفين', en: 'Edit Employees' },
   { group: 'hr', key: 'hr.delete', ar: 'حذف الموظفين', en: 'Delete Employees' },
+  { group: 'hr', key: 'hr.salary.view', ar: 'عرض الرواتب', en: 'View Salaries' },
   { group: 'sales', key: 'sales.view', ar: 'عرض المبيعات', en: 'View Sales' },
   { group: 'sales', key: 'sales.create', ar: 'إنشاء فواتير', en: 'Create Invoices' },
   { group: 'sales', key: 'sales.edit', ar: 'تعديل الفواتير', en: 'Edit Invoices' },
