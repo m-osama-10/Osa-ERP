@@ -189,7 +189,7 @@ VALUES
 ('po001', 'PO-0001', 'لابتوب ديل مجمع', 50, 16500, 825000, 'COMPLETED', NOW() - INTERVAL '30 days', NOW() - INTERVAL '20 days', NOW()),
 ('po002', 'PO-0002', 'كرسي مكتبي مجمّع', 100, 1850, 185000, 'IN_PROGRESS', NOW() - INTERVAL '10 days', NULL, NOW()),
 ('po003', 'PO-0003', 'لابتوب ديل مجمع', 30, 16500, 495000, 'PLANNED', NOW() + INTERVAL '7 days', NULL, NOW())
-ON CONFLICT (orderNo) DO NOTHING;
+ON CONFLICT ("orderNo") DO NOTHING;
 
 -- ============== Representatives ==============
 INSERT INTO "Representative" ("id", "code", "name", "phone", "email", "route", "status", "lastSync", "totalVisits", "totalCollected", "isActive", "createdAt")
