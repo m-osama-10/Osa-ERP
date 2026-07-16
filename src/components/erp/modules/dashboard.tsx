@@ -77,7 +77,7 @@ function KpiCard({ title, value, icon: Icon, trend, color, langLabel }: {
 }
 
 export function Dashboard() {
-  const { lang } = useApp()
+  const { lang, user } = useApp()
   const [data, setData] = React.useState<DashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
 
@@ -120,19 +120,19 @@ export function Dashboard() {
           </h2>
           <p className="mt-1 text-sm opacity-90">
             {lang === 'ar'
-              ? 'مرحباً المدير، إليك ملخص أداء شركتك اليوم'
-              : 'Welcome Admin, here is your company performance today'}
+              ? `مرحباً ${user?.name || 'مستخدم'}، إليك ملخص أداء شركتك اليوم`
+              : `Welcome ${user?.name || 'User'}, here is your company performance today`}
           </p>
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — trends computed from real monthlySales data */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title={t(lang, 'totalSales')}
           value={formatCurrency(data.kpis.totalSales)}
           icon={DollarSign}
-          trend={12.5}
+          trend={data.monthlySales && data.monthlySales.length >= 2 ? Math.round(((data.monthlySales[data.monthlySales.length - 1].sales - data.monthlySales[data.monthlySales.length - 2].sales) / Math.max(data.monthlySales[data.monthlySales.length - 2].sales, 1)) * 100) : undefined}
           color="#0d9488"
           langLabel={lang === 'ar' ? 'آخر شهر' : 'last month'}
         />
@@ -140,25 +140,22 @@ export function Dashboard() {
           title={t(lang, 'totalPurchases')}
           value={formatCurrency(data.kpis.totalPurchases)}
           icon={Wallet}
-          trend={-4.2}
           color="#f59e0b"
-          langLabel={lang === 'ar' ? 'آخر شهر' : 'last month'}
+          langLabel={lang === 'ar' ? 'إجمالي' : 'total'}
         />
         <KpiCard
           title={t(lang, 'netProfit')}
           value={formatCurrency(data.kpis.netProfit)}
           icon={TrendingUp}
-          trend={8.7}
           color="#3b82f6"
-          langLabel={lang === 'ar' ? 'آخر شهر' : 'last month'}
+          langLabel={lang === 'ar' ? 'إيرادات - مصروفات' : 'rev - exp'}
         />
         <KpiCard
           title={t(lang, 'totalCustomers')}
           value={formatNumber(data.kpis.totalCustomers)}
           icon={Users}
-          trend={5.3}
           color="#a855f7"
-          langLabel={lang === 'ar' ? 'آخر شهر' : 'last month'}
+          langLabel={lang === 'ar' ? 'نشط' : 'active'}
         />
       </div>
 

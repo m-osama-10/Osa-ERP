@@ -324,6 +324,72 @@ async function main() {
   await db.costCenter.create({ data: { code: 'CC-03', name: 'المشتريات' } })
   await db.costCenter.create({ data: { code: 'CC-04', name: 'الموارد البشرية' } })
 
+  // ============== Production Orders (real data) ==============
+  const allItemsForBom = await db.item.findMany()
+  const bom1 = await db.bOM.create({
+    data: {
+      productCode: 'LAPTOP-ASSY-01',
+      productName: 'لابتوب ديل مجمع',
+      version: '1.0',
+      totalCost: 16500,
+      isActive: true,
+      lines: {
+        create: [
+          { itemId: allItemsForBom[0].id, quantity: 1 },
+          { itemId: allItemsForBom[2].id, quantity: 1 },
+        ]
+      }
+    }
+  })
+  const bom2 = await db.bOM.create({
+    data: {
+      productCode: 'CHAIR-ASSY-01',
+      productName: 'كرسي مكتبي مجمّع',
+      version: '1.0',
+      totalCost: 1850,
+      isActive: true,
+    }
+  })
+
+  await db.productionOrder.create({
+    data: {
+      orderNo: 'PO-0001', bomId: bom1.id, productName: 'لابتوب ديل مجمع',
+      quantity: 50, unitCost: 16500, totalCost: 825000, status: 'COMPLETED',
+      startDate: new Date(Date.now() - 30 * 86400000), endDate: new Date(Date.now() - 20 * 86400000),
+    }
+  })
+  await db.productionOrder.create({
+    data: {
+      orderNo: 'PO-0002', bomId: bom2.id, productName: 'كرسي مكتبي مجمّع',
+      quantity: 100, unitCost: 1850, totalCost: 185000, status: 'IN_PROGRESS',
+      startDate: new Date(Date.now() - 10 * 86400000),
+    }
+  })
+  await db.productionOrder.create({
+    data: {
+      orderNo: 'PO-0003', bomId: bom1.id, productName: 'لابتوب ديل مجمع',
+      quantity: 30, unitCost: 16500, totalCost: 495000, status: 'PLANNED',
+      startDate: new Date(Date.now() + 7 * 86400000),
+    }
+  })
+
+  // ============== Representatives (real data) ==============
+  const reps = [
+    { code: 'REP-001', name: 'ماجد العتيبي', phone: '01001234567', email: 'majed@osa-erp.com', route: 'القاهرة - شمال', status: 'ONLINE', totalVisits: 12, totalCollected: 4500 },
+    { code: 'REP-002', name: 'سعد القحطاني', phone: '01002345678', email: 'saad@osa-erp.com', route: 'القاهرة - جنوب', status: 'ONLINE', totalVisits: 8, totalCollected: 3200 },
+    { code: 'REP-003', name: 'فهد الدوسري', phone: '01003456789', email: 'fahd@osa-erp.com', route: 'الإسكندرية - وسط', status: 'OFFLINE', totalVisits: 15, totalCollected: 6800 },
+    { code: 'REP-004', name: 'عبدالعزيز الحربي', phone: '01004567890', email: 'abdulaziz@osa-erp.com', route: 'أسيوط - الكورنيش', status: 'ONLINE', totalVisits: 6, totalCollected: 2400 },
+  ]
+  for (const r of reps) {
+    await db.representative.create({
+      data: {
+        ...r,
+        lastSync: new Date(Date.now() - Math.random() * 3600000),
+        isActive: true,
+      }
+    })
+  }
+
   // ============== Default System Settings (persisted in DB) ==============
   await db.setting.create({
     data: {

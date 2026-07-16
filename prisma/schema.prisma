@@ -43,7 +43,7 @@ model Company {
   phone     String?
   email     String?
   address   String?
-  currency  String   @default("SAR")
+  currency  String   @default("EGP")
   logo      String?
   createdAt DateTime @default(now())
   branches  Branch[]
@@ -277,12 +277,15 @@ model StockMovement {
 
 // ==================== Production / BOM ====================
 model BOM {
-  id        String   @id @default(cuid())
-  productId String
-  version   String   @default("1.0")
-  totalCost Float    @default(0)
-  isActive  Boolean  @default(true)
-  lines     BOMLine[]
+  id          String         @id @default(cuid())
+  productCode String
+  productName String
+  version     String         @default("1.0")
+  totalCost   Float          @default(0)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  lines       BOMLine[]
+  orders      ProductionOrder[]
 }
 
 model BOMLine {
@@ -296,6 +299,54 @@ model BOMLine {
   productItem Item?  @relation("BOMItem", fields: [productId], references: [id])
 }
 
+model ProductionOrder {
+  id          String   @id @default(cuid())
+  orderNo     String   @unique
+  bomId       String?
+  bom         BOM?     @relation(fields: [bomId], references: [id])
+  productName String
+  quantity    Float
+  unitCost    Float    @default(0)
+  totalCost   Float    @default(0)
+  status      String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+// ==================== Representatives ====================
+model Representative {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  phone       String?
+  email       String?
+  route       String?
+  branchId    String?
+  status      String   @default("OFFLINE") // ONLINE, OFFLINE
+  lastSync    DateTime?
+  totalVisits Int      @default(0)
+  totalCollected Float @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  visits      RepVisit[]
+}
+
+model RepVisit {
+  id          String   @id @default(cuid())
+  repId       String
+  rep         Representative @relation(fields: [repId], references: [id])
+  customerId  String?
+  customerName String?
+  visitDate   DateTime @default(now())
+  status      String   @default("VISITED") // VISITED, COMPLETED, CANCELLED
+  collectedAmount Float @default(0)
+  notes       String?
+  gpsLat      Float?
+  gpsLng      Float?
+}
+
 // ==================== Treasury / Banks ====================
 model Cash {
   id        String   @id @default(cuid())
@@ -303,7 +354,7 @@ model Cash {
   name      String
   branchId  String?
   balance   Float    @default(0)
-  currency  String   @default("SAR")
+  currency  String   @default("EGP")
   isActive  Boolean  @default(true)
 }
 
@@ -315,7 +366,7 @@ model BankAccount {
   iban      String?
   branchId  String?
   balance   Float    @default(0)
-  currency  String   @default("SAR")
+  currency  String   @default("EGP")
   isActive  Boolean  @default(true)
 }
 
