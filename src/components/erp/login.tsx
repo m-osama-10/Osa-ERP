@@ -5,33 +5,80 @@ import { useApp, t } from '@/components/erp/app-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, ShieldCheck, Sparkles, Phone, Facebook, MapPin } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, ShieldCheck, Sparkles, Phone, Facebook, MapPin, KeyRound, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+
+type Mode = 'login' | 'forgot' | 'reset'
 
 export function Login() {
   const { lang, setUser } = useApp()
+  const [mode, setMode] = React.useState<Mode>('login')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPass, setShowPass] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const [rememberMe, setRememberMe] = React.useState(true)
+  const [resetToken, setResetToken] = React.useState('')
+  const [newPassword, setNewPassword] = React.useState('')
+  const [success, setSuccess] = React.useState(false)
+
+  // Check for reset token in URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('reset')
+    if (token) {
+      setResetToken(token)
+      setMode('reset')
+    }
+  }, [])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
     setLoading(true)
+    setSuccess(false)
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || (lang === 'ar' ? 'فشل تسجيل الدخول' : 'Login failed'))
-        return
+      if (mode === 'login') {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          toast.error(data.error || (lang === 'ar' ? 'فشل تسجيل الدخول' : 'Login failed'))
+          return
+        }
+        setUser(data)
+        toast.success(lang === 'ar' ? `أهلاً ${data.name}` : `Welcome ${data.name}`)
+      } else if (mode === 'forgot') {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setSuccess(true)
+          toast.success(data.message || (lang === 'ar' ? 'تم الإرسال' : 'Sent'))
+        } else {
+          toast.error(data.error || 'Error')
+        }
+      } else if (mode === 'reset') {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, newPassword }),
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setSuccess(true)
+          toast.success(data.message || (lang === 'ar' ? 'تم التغيير' : 'Changed'))
+          setTimeout(() => { setMode('login'); setSuccess(false); setNewPassword(''); setResetToken('') }, 2000)
+        } else {
+          toast.error(data.error || 'Error')
+        }
       }
-      setUser(data)
-      toast.success(lang === 'ar' ? `أهلاً ${data.name}` : `Welcome ${data.name}`)
     } catch {
       toast.error(lang === 'ar' ? 'خطأ في الاتصال' : 'Connection error')
     } finally {
@@ -66,88 +113,136 @@ export function Login() {
 
         {/* Card */}
         <div className="glass-strong rounded-3xl p-8 shadow-soft-xl">
-          <div className="mb-6 flex items-center gap-2">
-            <div className="grid h-10 w-10 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-soft">
-              <ShieldCheck className="h-5 w-5" />
+          {success ? (
+            <div className="text-center py-8">
+              <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-4 animate-scale-in" />
+              <h2 className="text-xl font-bold mb-2">
+                {mode === 'forgot'
+                  ? (lang === 'ar' ? 'تم الإرسال' : 'Sent')
+                  : (lang === 'ar' ? 'تم التغيير' : 'Changed')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {mode === 'forgot'
+                  ? (lang === 'ar' ? 'إذا كان البريد موجوداً، سيتم إرسال رابط إعادة التعيين' : 'If email exists, a reset link has been sent')
+                  : (lang === 'ar' ? 'سيتم تحويلك لتسجيل الدخول...' : 'Redirecting to login...')}
+              </p>
             </div>
-            <h2 className="text-xl font-bold">{t(lang, 'login')}</h2>
-          </div>
-
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <Label className="font-semibold">{t(lang, 'email')}</Label>
-              <div className="relative mt-1.5 group">
-                <Mail className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ [lang === 'ar' ? 'right' : 'left']: 12 } as React.CSSProperties} />
-                <Input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
-                  style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36 } as React.CSSProperties}
-                  dir="ltr"
-                  autoComplete="email"
-                />
+          ) : (
+            <>
+              <div className="mb-6 flex items-center gap-2">
+                <div className="grid h-10 w-10 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-soft">
+                  {mode === 'login' ? <ShieldCheck className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
+                </div>
+                <h2 className="text-xl font-bold">
+                  {mode === 'login' ? t(lang, 'login')
+                    : mode === 'forgot' ? (lang === 'ar' ? 'نسيت كلمة المرور' : 'Forgot Password')
+                    : (lang === 'ar' ? 'إعادة تعيين كلمة المرور' : 'Reset Password')}
+                </h2>
               </div>
-            </div>
 
-            <div>
-              <Label className="font-semibold">{t(lang, 'password')}</Label>
-              <div className="relative mt-1.5 group">
-                <Lock className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ [lang === 'ar' ? 'right' : 'left']: 12 } as React.CSSProperties} />
-                <Input
-                  type={showPass ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
-                  style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36, [lang === 'ar' ? 'paddingLeft' : 'paddingRight']: 36 } as React.CSSProperties}
-                  dir="ltr"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(s => !s)}
-                  className="absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                  style={{ [lang === 'ar' ? 'left' : 'right']: 12 } as React.CSSProperties}
-                >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <form onSubmit={submit} className="space-y-4">
+                {mode === 'login' && (
+                  <>
+                    <div>
+                      <Label className="font-semibold">{t(lang, 'email')}</Label>
+                      <div className="relative mt-1.5 group">
+                        <Mail className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ [lang === 'ar' ? 'right' : 'left']: 12 } as React.CSSProperties} />
+                        <Input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                          className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
+                          style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36 } as React.CSSProperties}
+                          dir="ltr" autoComplete="email" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="font-semibold">{t(lang, 'password')}</Label>
+                      <div className="relative mt-1.5 group">
+                        <Lock className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ [lang === 'ar' ? 'right' : 'left']: 12 } as React.CSSProperties} />
+                        <Input type={showPass ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
+                          className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all"
+                          style={{ [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: 36, [lang === 'ar' ? 'paddingLeft' : 'paddingRight']: 36 } as React.CSSProperties}
+                          dir="ltr" autoComplete="current-password" />
+                        <button type="button" onClick={() => setShowPass(s => !s)}
+                          className="absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                          style={{ [lang === 'ar' ? 'left' : 'right']: 12 } as React.CSSProperties}>
+                          {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded h-4 w-4" />
+                        {lang === 'ar' ? 'تذكرني' : 'Remember me'}
+                      </label>
+                      <button type="button" onClick={() => { setMode('forgot'); setSuccess(false) }} className="text-sm text-primary hover:underline">
+                        {lang === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {mode === 'forgot' && (
+                  <div>
+                    <Label className="font-semibold">{t(lang, 'email')}</Label>
+                    <div className="relative mt-1.5 group">
+                      <Mail className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ right: 12 }} />
+                      <Input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                        className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all pr-9"
+                        dir="ltr" placeholder={lang === 'ar' ? 'بريدك الإلكتروني' : 'Your email'} />
+                    </div>
+                  </div>
+                )}
+
+                {mode === 'reset' && (
+                  <div>
+                    <Label className="font-semibold">{lang === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+                    <div className="relative mt-1.5 group">
+                      <Lock className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" style={{ right: 12 }} />
+                      <Input type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                        className="h-11 rounded-xl focus:ring-2 focus:ring-primary/30 transition-all pr-9"
+                        dir="ltr" placeholder="••••••••" minLength={8} />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {lang === 'ar' ? '8 أحرف على الأقل، حرف كبير + رقم' : 'Min 8 chars, uppercase + number'}
+                    </p>
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full h-12 text-base btn-primary-gradient btn-ripple" disabled={loading}>
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                    <>
+                      {mode === 'login' ? t(lang, 'login')
+                        : mode === 'forgot' ? (lang === 'ar' ? 'إرسال الرابط' : 'Send Link')
+                        : (lang === 'ar' ? 'إعادة التعيين' : 'Reset Password')}
+                      <ArrowLeft className="h-4 w-4 ml-2 rtl:rotate-180" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              {mode !== 'login' && (
+                <button onClick={() => { setMode('login'); setSuccess(false) }} className="mt-4 text-sm text-muted-foreground hover:text-primary transition-colors block w-full text-center">
+                  {lang === 'ar' ? '← العودة لتسجيل الدخول' : '← Back to login'}
                 </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-12 text-base btn-primary-gradient btn-ripple"
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                <>
-                  {t(lang, 'login')}
-                  <ArrowLeft className="h-4 w-4 ml-2 rtl:rotate-180" />
-                </>
               )}
-            </Button>
-          </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 rounded-2xl glass p-4 text-xs">
-            <p className="font-bold mb-2 text-primary flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full gradient-accent animate-pulse-glow" />
-              {lang === 'ar' ? 'حساب تجريبي للزوار' : 'Demo Account'}
-            </p>
-            <button
-              type="button"
-              onClick={() => { setEmail('demo@osa-erp.com'); setPassword('Demo@2026') }}
-              className="block w-full text-start hover:text-primary transition-colors p-2 rounded-lg hover:bg-muted/50 font-mono"
-              dir="ltr"
-            >
-              👤 demo@osa-erp.com / Demo@2026
-            </button>
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              {lang === 'ar' ? 'هذا الحساب للتجربة فقط — البيانات تُعاد ضبطها دورياً' : 'Demo only — data resets periodically'}
-            </p>
-          </div>
+              {/* Demo credentials */}
+              {mode === 'login' && (
+                <div className="mt-6 rounded-2xl glass p-4 text-xs">
+                  <p className="font-bold mb-2 text-primary flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full gradient-accent animate-pulse-glow" />
+                    {lang === 'ar' ? 'حساب تجريبي للزوار' : 'Demo Account'}
+                  </p>
+                  <button type="button" onClick={() => { setEmail('demo@osaerp.com'); setPassword('Demo@123') }}
+                    className="block w-full text-start hover:text-primary transition-colors p-2 rounded-lg hover:bg-muted/50 font-mono" dir="ltr">
+                    👤 demo@osaerp.com / Demo@123
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted-foreground">
+                    {lang === 'ar' ? 'هذا الحساب للتجربة فقط — البيانات تُعاد ضبطها دورياً' : 'Demo only — data resets periodically'}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Contact + Made in Egypt */}
@@ -167,7 +262,6 @@ export function Login() {
             </a>
           </div>
 
-          {/* Proudly made in Upper Egypt */}
           <div className="rounded-2xl gradient-primary p-4 text-center text-primary-foreground shadow-soft">
             <p className="text-sm font-bold flex items-center justify-center gap-2">
               <span className="text-lg">🇪🇬</span>

@@ -61,7 +61,8 @@ export async function GET(req: NextRequest) {
   }
 
   const final = await db.notification.findMany({ where, orderBy: { createdAt: 'desc' }, take: 50 })
-  return NextResponse.json(final)
+  // Always return an array — never an object — so clients can safely call .slice()
+  return NextResponse.json(Array.isArray(final) ? final : [])
 }
 
 export async function POST(req: NextRequest) {

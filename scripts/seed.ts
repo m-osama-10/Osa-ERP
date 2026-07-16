@@ -254,7 +254,7 @@ async function main() {
   // ============== Users — Production Setup ==============
   // Main admin account: Mohamed Osama (the owner)
   const ownerPass = await bcrypt.hash('Osama@2026', 10)
-  const demoPass = await bcrypt.hash('Demo@2026', 10)
+  const demoPass = await bcrypt.hash('Demo@123', 10)
 
   // All permissions for admin (Mohamed Osama — full access)
   const allPerms = JSON.stringify([
@@ -308,7 +308,7 @@ async function main() {
   // Demo account for landing page visitors (limited, no destructive perms)
   await db.user.create({
     data: {
-      email: 'demo@osa-erp.com',
+      email: 'demo@osaerp.com',
       name: 'حساب تجريبي',
       password: demoPass,
       role: 'USER',
@@ -406,9 +406,9 @@ async function main() {
     }
   })
 
-  console.log('✅ Seed v3.0 completed (production-ready)!')
+  console.log('✅ Seed v3.1 completed (production-ready)!')
   console.log('   👑 Owner: mohamed.osama@osa-erp.com / Osama@2026')
-  console.log('   🎯 Demo:  demo@osa-erp.com / Demo@2026')
+  console.log('   🎯 Demo:  demo@osaerp.com / Demo@123')
 }
 
 main()

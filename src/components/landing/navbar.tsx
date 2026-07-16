@@ -30,7 +30,7 @@ export function Navbar() {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'demo@osa-erp.com', password: 'Demo@2026' })
+      body: JSON.stringify({ email: 'demo@osaerp.com', password: 'Demo@123' })
     })
     if (res.ok) {
       const data = await res.json()

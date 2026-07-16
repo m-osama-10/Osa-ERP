@@ -15,11 +15,18 @@ export function TopBar() {
   const [scrolled, setScrolled] = React.useState(false)
 
   React.useEffect(() => {
-    const loadNotifs = () => {
-      fetch('/api/notifications?unread=1').then(r => r.json()).then(d => {
-        setNotifications(d.slice(0, 8))
-        setUnreadCount(d.length)
-      })
+    const loadNotifs = async () => {
+      try {
+        const res = await fetch('/api/notifications?unread=1')
+        if (!res.ok) return
+        const data = await res.json()
+        // Always validate: ensure we have an array before calling .slice()
+        const notifs = Array.isArray(data) ? data : (data?.notifications ?? [])
+        setNotifications(notifs.slice(0, 8))
+        setUnreadCount(notifs.length)
+      } catch {
+        // Network error — silently ignore, will retry on next interval
+      }
     }
     loadNotifs()
     const interval = setInterval(loadNotifs, 30000)
