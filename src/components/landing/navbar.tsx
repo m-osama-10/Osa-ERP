@@ -27,10 +27,9 @@ export function Navbar() {
   }, [])
 
   const quickDemo = async () => {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch('/api/auth/demo-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'demo@osaerp.com', password: 'Demo@123' })
     })
     if (res.ok) {
       const data = await res.json()

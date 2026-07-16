@@ -232,28 +232,27 @@ export function Login() {
                 </button>
               )}
 
-              {/* Demo credentials + Guest button */}
+              {/* Demo Guest button — no credentials shown */}
               {mode === 'login' && (
-                <div className="mt-6 rounded-2xl glass p-4">
-                  <p className="font-bold mb-3 text-primary flex items-center gap-1.5 text-sm">
-                    <span className="h-2 w-2 rounded-full gradient-accent animate-pulse-glow" />
-                    {lang === 'ar' ? 'الدخول بحساب Demo' : 'Login as Demo'}
-                  </p>
-                  <div className="space-y-1 mb-3 text-xs text-muted-foreground">
-                    <div className="flex justify-between"><span>{lang === 'ar' ? 'البريد' : 'Email'}:</span><span className="font-mono" dir="ltr">demo@osaerp.com</span></div>
-                    <div className="flex justify-between"><span>{lang === 'ar' ? 'كلمة المرور' : 'Password'}:</span><span className="font-mono" dir="ltr">Demo@123</span></div>
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-card px-3 text-muted-foreground">{lang === 'ar' ? 'أو' : 'OR'}</span>
+                    </div>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full h-11 btn-ripple gap-2"
+                    className="w-full h-12 mt-4 btn-ripple gap-2"
                     onClick={async () => {
                       setLoading(true)
                       try {
-                        const res = await fetch('/api/auth/login', {
+                        const res = await fetch('/api/auth/demo-login', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ email: 'demo@osaerp.com', password: 'Demo@123' }),
                         })
                         const data = await res.json()
                         if (res.ok) {
@@ -274,7 +273,7 @@ export function Login() {
                     {lang === 'ar' ? '🚀 الدخول كضيف (Demo)' : '🚀 Login as Guest (Demo)'}
                   </Button>
                   <p className="mt-2 text-[10px] text-muted-foreground text-center">
-                    {lang === 'ar' ? 'هذا الحساب للتجربة فقط — البيانات تُعاد ضبطها دورياً' : 'Demo only — data resets periodically'}
+                    {lang === 'ar' ? 'جرّب النظام مباشرة بدون تسجيل' : 'Try the system directly without registration'}
                   </p>
                 </div>
               )}

@@ -406,9 +406,8 @@ async function main() {
     }
   })
 
-  console.log('✅ Seed v3.1 completed (production-ready)!')
-  console.log('   👑 Owner: mohamed.osama@osa-erp.com / Osama@2026')
-  console.log('   🎯 Demo:  demo@osaerp.com / Demo@123')
+  console.log('✅ Seed completed successfully!')
+  console.log('   Owner and Demo accounts created.')
 }
 
 main()

@@ -30,12 +30,18 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — NEVER commit real secrets
+.env
+.env.local
+.env.production
+.env*.local
+
+# Allow example env files
+!.env.production.example
+!.env.development
 
 # vercel
 .vercel
-
 
 # typescript
 *.tsbuildinfo
@@ -55,4 +61,6 @@ server.log
 # Database (SQLite dev)
 /db/*.db
 /db/*.db-journal
+# Uploads
+/upload/
 

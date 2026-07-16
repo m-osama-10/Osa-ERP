@@ -1,5 +1,6 @@
 // Osa ERP - Prisma Schema
 // Comprehensive ERP data model
+// Supports both SQLite (dev) and PostgreSQL (production / Supabase)
 
 generator client {
   provider = "prisma-client-js"
