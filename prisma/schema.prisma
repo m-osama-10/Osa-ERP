@@ -10,6 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== Currency ====================
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique // EGP, USD, SAR, EUR
+  name      String   // جنيه مصري, دولار أمريكي
+  nameEn    String?
+  symbol    String   // ج.م, $, ر.س, €
+  isBase    Boolean  @default(false) // العملة الأساسية
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model ExchangeRate {
+  id         String   @id @default(cuid())
+  fromCode   String   // EGP, USD
+  toCode     String   // USD, EGP
+  rate       Float    // multiplier
+  date       DateTime @default(now())
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@unique([fromCode, toCode, date])
+}
+
 // ==================== Core / Organization ====================
 model Company {
   id        String   @id @default(cuid())
