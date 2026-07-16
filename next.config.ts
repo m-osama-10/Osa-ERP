@@ -5,13 +5,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   reactStrictMode: true,
-  // Production: compress responses
   compress: true,
-  // Security headers
   async headers() {
     return [
       {
