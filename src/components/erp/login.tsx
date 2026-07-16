@@ -161,9 +161,9 @@ export function Login() {
               <Mail className="h-3.5 w-3.5 text-primary" />
               <span className="truncate w-full text-center">M.osama10</span>
             </a>
-            <a href="https://Facebook.com/osa.erp" target="_blank" rel="noopener" className="flex flex-col items-center gap-1 p-2 rounded-xl glass hover:shadow-soft transition-shadow">
+            <a href="https://www.facebook.com/Osa.Erp.eg" target="_blank" rel="noopener" className="flex flex-col items-center gap-1 p-2 rounded-xl glass hover:shadow-soft transition-shadow">
               <Facebook className="h-3.5 w-3.5 text-primary" />
-              <span>osa.erp</span>
+              <span>Osa.Erp.eg</span>
             </a>
           </div>
 

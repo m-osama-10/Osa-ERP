@@ -79,11 +79,11 @@ export function Footer() {
                 </div>
                 M.osama10@outlook.com
               </a>
-              <a href="https://Facebook.com/osa.erp" target="_blank" rel="noopener" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
+              <a href="https://www.facebook.com/Osa.Erp.eg" target="_blank" rel="noopener" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted group-hover:gradient-primary group-hover:text-primary-foreground transition-all">
                   <Facebook className="h-4 w-4" />
                 </div>
-                Facebook.com/osa.erp
+                facebook.com/Osa.Erp.eg
               </a>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted">
