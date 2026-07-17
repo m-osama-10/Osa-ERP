@@ -321,16 +321,19 @@ function POS() {
   // Get or create a walk-in customer for POS sales
   const getWalkInCustomer = async () => {
     const res = await fetch('/api/customers')
+    if (!res.ok) throw new Error('فشل تحميل العملاء')
     const customers = await res.json()
-    let walkIn = customers.find((c: any) => c.code === 'C-WALK')
+    let walkIn = Array.isArray(customers) ? customers.find((c: any) => c.code === 'C-WALK') : null
     if (!walkIn) {
       const createRes = await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: 'C-WALK', name: 'عميل نقطة البيع', nameEn: 'Walk-in Customer', type: 'INDIVIDUAL' })
       })
+      if (!createRes.ok) throw new Error('فشل إنشاء عميل نقطة البيع')
       walkIn = await createRes.json()
     }
+    if (!walkIn || !walkIn.id) throw new Error('عميل نقطة البيع غير صالح')
     return walkIn
   }
 
@@ -467,7 +470,7 @@ function POS() {
                 toast.error(err.error || (lang === 'ar' ? 'فشل البيع' : 'Sale failed'))
               }
             } catch (e: any) {
-              toast.error(lang === 'ar' ? 'خطأ في الاتصال' : 'Connection error')
+              toast.error(e?.message || (lang === 'ar' ? 'خطأ في الاتصال' : 'Connection error'))
             } finally {
               setCompleting(false)
             }

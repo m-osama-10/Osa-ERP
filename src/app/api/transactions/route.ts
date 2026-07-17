@@ -27,30 +27,78 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      const amt = parseFloat(amount)
+
+      // Check for negative balance (prevent overdraft)
+      if (type === 'PAYMENT' || type === 'TRANSFER') {
+        if (cashId) {
+          const cash = await tx.cash.findUnique({ where: { id: cashId } })
+          if (cash && cash.balance < amt) {
+            throw new Error(`رصيد الخزينة "${cash.name}" غير كافي. الرصيد الحالي: ${cash.balance}`)
+          }
+        }
+        if (bankId) {
+          const bank = await tx.bankAccount.findUnique({ where: { id: bankId } })
+          if (bank && bank.balance < amt) {
+            throw new Error(`رصيد البنك "${bank.bankName}" غير كافي. الرصيد الحالي: ${bank.balance}`)
+          }
+        }
+      }
+
       // Create transaction record
       const transaction = await tx.transaction.create({
         data: {
           type, cashId: cashId || null, bankId: bankId || null,
           toCashId: toCashId || null, toBankId: toBankId || null,
-          amount: parseFloat(amount), description, refType, refId,
+          amount: amt, description, refType, refId,
         }
       })
 
       // Update balances based on type
       if (type === 'RECEIPT') {
-        // Cash-in: increase source balance
-        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { increment: parseFloat(amount) } } })
-        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { increment: parseFloat(amount) } } })
+        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { increment: amt } } })
+        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { increment: amt } } })
       } else if (type === 'PAYMENT') {
-        // Cash-out: decrease source balance
-        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { decrement: parseFloat(amount) } } })
-        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { decrement: parseFloat(amount) } } })
+        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { decrement: amt } } })
+        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { decrement: amt } } })
       } else if (type === 'TRANSFER') {
-        // Transfer: decrease source, increase destination
-        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { decrement: parseFloat(amount) } } })
-        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { decrement: parseFloat(amount) } } })
-        if (toCashId) await tx.cash.update({ where: { id: toCashId }, data: { balance: { increment: parseFloat(amount) } } })
-        if (toBankId) await tx.bankAccount.update({ where: { id: toBankId }, data: { balance: { increment: parseFloat(amount) } } })
+        if (cashId) await tx.cash.update({ where: { id: cashId }, data: { balance: { decrement: amt } } })
+        if (bankId) await tx.bankAccount.update({ where: { id: bankId }, data: { balance: { decrement: amt } } })
+        if (toCashId) await tx.cash.update({ where: { id: toCashId }, data: { balance: { increment: amt } } })
+        if (toBankId) await tx.bankAccount.update({ where: { id: toBankId }, data: { balance: { increment: amt } } })
+      }
+
+      // Auto-generate journal entry for accounting
+      const accounts = await tx.account.findMany()
+      const findAcc = (code: string) => accounts.find(a => a.code === code)
+      const cashAcc = findAcc('1101') // Cash & Banks
+      const jeCount = await tx.journalEntry.count()
+      const jeNo = `JE-${String(jeCount + 1).padStart(4, '0')}`
+
+      if (type === 'RECEIPT' && cashAcc) {
+        await tx.journalEntry.create({
+          data: {
+            entryNo: jeNo, date: new Date(), description: description || 'إيصال قبض',
+            totalDebit: amt, totalCredit: amt, status: 'POSTED',
+            lines: { create: [
+              { accountId: cashAcc.id, debit: amt, credit: 0, description: 'قبض نقدي' },
+              { accountId: cashAcc.id, debit: 0, credit: amt, description: 'مقابل' },
+            ]}
+          }
+        })
+        await tx.account.update({ where: { id: cashAcc.id }, data: { balance: { increment: amt } } })
+      } else if (type === 'PAYMENT' && cashAcc) {
+        await tx.journalEntry.create({
+          data: {
+            entryNo: jeNo, date: new Date(), description: description || 'إيصال صرف',
+            totalDebit: amt, totalCredit: amt, status: 'POSTED',
+            lines: { create: [
+              { accountId: cashAcc.id, debit: amt, credit: 0, description: 'مقابل' },
+              { accountId: cashAcc.id, debit: 0, credit: amt, description: 'صرف نقدي' },
+            ]}
+          }
+        })
+        await tx.account.update({ where: { id: cashAcc.id }, data: { balance: { decrement: amt } } })
       }
 
       return transaction
@@ -59,6 +107,6 @@ export async function POST(req: NextRequest) {
     await logAudit(auth, 'إنشاء حركة مالية', 'الخزائن', `${type}: ${amount}`, req)
     return NextResponse.json(result)
   } catch (e: any) {
-    return NextResponse.json({ error: 'فشل العملية', details: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message || 'فشل العملية' }, { status: 500 })
   }
 }

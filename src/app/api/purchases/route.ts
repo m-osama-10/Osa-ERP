@@ -72,13 +72,23 @@ export async function POST(req: NextRequest) {
         data: { balance: { increment: total - (paidAmount || 0) } }
       })
 
-      // Increase inventory + create stock movements
+      // Increase inventory + update cost price + create stock movements
       for (const it of items) {
         const item = itemMap.get(it.itemId)
         if (!item) continue
+
+        // Calculate weighted average cost
+        const oldTotal = item.costPrice * item.qtyOnHand
+        const newTotal = it.price * it.quantity
+        const newQty = item.qtyOnHand + it.quantity
+        const avgCost = newQty > 0 ? (oldTotal + newTotal) / newQty : it.price
+
         await tx.item.update({
           where: { id: it.itemId },
-          data: { qtyOnHand: { increment: it.quantity } }
+          data: {
+            qtyOnHand: { increment: it.quantity },
+            costPrice: avgCost, // Update to weighted average cost
+          }
         })
         await tx.stockMovement.create({
           data: {

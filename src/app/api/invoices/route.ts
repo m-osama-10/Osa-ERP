@@ -24,6 +24,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'العميل والأصناف مطلوبة' }, { status: 400 })
   }
 
+  // Validate stock availability before creating invoice
+  const stockItemIds = items.map((it: any) => it.itemId)
+  const stockItems = await db.item.findMany({ where: { id: { in: stockItemIds } } })
+  for (const it of items) {
+    const item = stockItems.find(i => i.id === it.itemId)
+    if (!item) {
+      return NextResponse.json({ error: `الصنف غير موجود` }, { status: 400 })
+    }
+    if (item.qtyOnHand < it.quantity) {
+      return NextResponse.json({
+        error: `الكمية المطلوبة من "${item.name}" (${it.quantity}) أكبر من المخزون المتاح (${item.qtyOnHand})`
+      }, { status: 400 })
+    }
+  }
+
   // Get system settings for tax rate
   const settingRow = await db.setting.findUnique({ where: { key: 'system' } })
   const settings = settingRow ? JSON.parse(settingRow.value) : { taxRate: 14 }
