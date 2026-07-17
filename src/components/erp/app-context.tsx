@@ -4,7 +4,7 @@ import * as React from 'react'
 
 type Lang = 'ar' | 'en'
 type Theme = 'light' | 'dark'
-type CurrencyCode = 'EGP' // Unified to Egyptian Pound only
+export type CurrencyCode = 'EGP' // Unified to Egyptian Pound only
 
 type User = {
   id: string
@@ -238,7 +238,6 @@ export const t = (lang: Lang, key: string): string => {
     logout: { ar: 'تسجيل الخروج', en: 'Logout' },
     password: { ar: 'كلمة المرور', en: 'Password' },
     role: { ar: 'الدور', en: 'Role' },
-    permissions: { ar: 'الصلاحيات', en: 'Permissions' },
     export: { ar: 'تصدير', en: 'Export' },
     print: { ar: 'طباعة', en: 'Print' },
     from: { ar: 'من', en: 'From' },

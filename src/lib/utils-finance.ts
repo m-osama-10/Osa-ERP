@@ -29,10 +29,10 @@ export function convert(amount: number, from: CurrencyCode, to: CurrencyCode, ra
 }
 
 export function formatMoney(amount: number, currency: CurrencyCode, converted: number): string {
-  const symbols: Record<CurrencyCode, string> = { EGP: 'ج.م', USD: '$', SAR: 'ر.س' }
-  const locales: Record<CurrencyCode, string> = { EGP: 'ar-EG', USD: 'en-US', SAR: 'ar-SA' }
-  const num = new Intl.NumberFormat(locales[currency], { maximumFractionDigits: 2 }).format(converted)
-  return currency === 'USD' ? `$${num}` : `${num} ${symbols[currency]}`
+  const symbols: Record<string, string> = { EGP: 'ج.م', USD: '$', SAR: 'ر.س' }
+  const locales: Record<string, string> = { EGP: 'ar-EG', USD: 'en-US', SAR: 'ar-SA' }
+  const num = new Intl.NumberFormat(locales[currency] || 'ar-EG', { maximumFractionDigits: 2 }).format(converted)
+  return currency === ('USD' as CurrencyCode) ? `$${num}` : `${num} ${symbols[currency] || 'ج.م'}`
 }
 
 // P&L calculations (pure)

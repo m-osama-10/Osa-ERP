@@ -19,6 +19,7 @@ type ProductionOrder = {
   id: string; orderNo: string; productName: string; quantity: number
   unitCost: number; totalCost: number; status: string
   startDate: string; endDate: string | null; notes: string | null
+  bomId: string | null
   bom: { id: string; productCode: string; productName: string } | null
 }
 

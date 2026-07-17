@@ -24,6 +24,7 @@ import * as XLSX from 'xlsx'
 
 type Employee = {
   id: string; code: string; name: string; nameEn: string | null
+  nationalId: string | null
   phone: string | null; email: string | null
   position: string | null; department: string | null
   hireDate: string; basicSalary: number; allowances: number

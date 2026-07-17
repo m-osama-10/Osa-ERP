@@ -112,7 +112,7 @@ export function FilterBar({
   const hasActiveFilters =
     values.search || values.datePreset !== 'all' || values.status || values.branchId || values.userId ||
     Object.values(values.extra).some(v => v) ||
-    (values.datePreset === 'custom' && (values.dateFrom || values.dateTo))
+    (values.datePreset as string === 'custom' && (values.dateFrom || values.dateTo))
 
   const update = (patch: Partial<FilterValues>) => onChange({ ...values, ...patch })
   const reset = () => onChange({ ...defaultFilters })
