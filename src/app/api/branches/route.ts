@@ -5,11 +5,65 @@ import { requireAuth, requirePermission, logAudit } from '@/lib/auth'
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if (auth instanceof NextResponse) return auth
+
   const branches = await db.branch.findMany({ orderBy: { code: 'asc' } })
-  // Count employees per branch manually
-  const employees = await db.employee.groupBy({ by: ['branchId'], _count: true })
+
+  // Gather stats per branch
+  const [employees, cashBoxes, bankAccounts, invoices, purchases, items] = await Promise.all([
+    db.employee.groupBy({ by: ['branchId'], _count: true }),
+    db.cash.findMany({ select: { branchId: true, balance: true } }),
+    db.bankAccount.findMany({ select: { branchId: true, balance: true } }),
+    db.invoice.findMany({ where: { type: { not: 'RETURN' } }, select: { branchId: true, total: true, date: true } }),
+    db.purchase.findMany({ where: { status: { not: 'RETURN' } }, select: { total: true, date: true } }),
+    db.item.findMany({ select: { costPrice: true, qtyOnHand: true } }),
+  ])
+
   const empMap = new Map(employees.filter(e => e.branchId).map(e => [e.branchId, e._count]))
-  const result = branches.map(b => ({ ...b, _count: { employees: empMap.get(b.id) || 0 } }))
+  const cashMap = new Map<string, { count: number; total: number }>()
+  for (const c of cashBoxes) {
+    if (!c.branchId) continue
+    const cur = cashMap.get(c.branchId) || { count: 0, total: 0 }
+    cur.count++; cur.total += c.balance
+    cashMap.set(c.branchId, cur)
+  }
+  const bankMap = new Map<string, { count: number; total: number }>()
+  for (const b of bankAccounts) {
+    if (!b.branchId) continue
+    const cur = bankMap.get(b.branchId) || { count: 0, total: 0 }
+    cur.count++; cur.total += b.balance
+    bankMap.set(b.branchId, cur)
+  }
+
+  // Total inventory value (same for all branches since no per-branch stock)
+  const inventoryValue = items.reduce((s, i) => s + i.costPrice * i.qtyOnHand, 0)
+
+  // Total sales & purchases
+  const totalSales = invoices.reduce((s, i) => s + i.total, 0)
+  const totalPurchases = purchases.reduce((s, p) => s + p.total, 0)
+  const totalExpenses = 0 // Would come from expense accounts in journal entries
+
+  const result = branches.map(b => {
+    const cashStats = cashMap.get(b.id) || { count: 0, total: 0 }
+    const bankStats = bankMap.get(b.id) || { count: 0, total: 0 }
+    const empCount = empMap.get(b.id) || 0
+    return {
+      ...b,
+      _count: { employees: empCount },
+      stats: {
+        employees: empCount,
+        cashCount: cashStats.count,
+        cashTotal: cashStats.total,
+        bankCount: bankStats.count,
+        bankTotal: bankStats.total,
+        inventoryValue,
+        totalSales,
+        totalPurchases,
+        totalExpenses,
+        profit: totalSales - totalPurchases - totalExpenses,
+      }
+    }
+  })
+
   return NextResponse.json(result)
 }
 

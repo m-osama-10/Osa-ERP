@@ -36,6 +36,7 @@ type Employee = {
 type Attendance = {
   id: string; date: string; checkIn: string | null; checkOut: string | null
   workHours: number; overtime: number; lateMinutes: number; status: string; notes: string | null
+  employeeId: string
   employee: { id: string; name: string; code: string }
 }
 
@@ -469,12 +470,16 @@ function AttendanceTab() {
   const [days, setDays] = React.useState(7)
   const [checkInOpen, setCheckInOpen] = React.useState(false)
   const [selectedEmp, setSelectedEmp] = React.useState('')
+  const [importOpen, setImportOpen] = React.useState(false)
+  const [importData, setImportData] = React.useState<any[]>([])
+  const [importing, setImporting] = React.useState(false)
+  const [viewMode, setViewMode] = React.useState<'records' | 'monthly' | 'annual'>('records')
 
   const load = () => {
     Promise.all([
       fetch(`/api/attendance?days=${days}`).then(r => r.json()),
       fetch('/api/employees').then(r => r.json()),
-    ]).then(([a, e]) => { setRecords(a); setEmployees(e); setLoading(false) })
+    ]).then(([a, e]) => { setRecords(Array.isArray(a) ? a : []); setEmployees(e); setLoading(false) })
   }
   React.useEffect(load, [days])
 
@@ -511,118 +516,334 @@ function AttendanceTab() {
     toast.success(lang === 'ar' ? 'تم التصدير' : 'Exported')
   }
 
+  const downloadTemplate = () => {
+    exportExcel({
+      filename: 'attendance-template.xlsx',
+      sheets: [{
+        name: 'Template',
+        columns: ['Employee Code', 'Date (YYYY-MM-DD)', 'Check In (HH:MM)', 'Check Out (HH:MM)', 'Status', 'Notes'],
+        rows: [
+          ['EMP-001', '2024-06-15', '08:30', '17:00', 'PRESENT', ''],
+          ['EMP-002', '2024-06-15', '09:15', '17:00', 'LATE', 'تأخر 15 دقيقة'],
+          ['EMP-003', '2024-06-15', '', '', 'ABSENT', ''],
+        ]
+      }]
+    })
+    toast.success(lang === 'ar' ? 'تم تحميل القالب' : 'Template downloaded')
+  }
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const buf = await file.arrayBuffer()
+    const wb = XLSX.read(buf)
+    const ws = wb.Sheets[wb.SheetNames[0]]
+    const json = XLSX.utils.sheet_to_json(ws)
+    setImportData(json as any[])
+    toast.success(lang === 'ar' ? `تم قراءة ${json.length} صف` : `Read ${json.length} rows`)
+  }
+
+  const doImport = async () => {
+    if (importData.length === 0) { toast.error(lang === 'ar' ? 'لا توجد بيانات' : 'No data'); return }
+    setImporting(true)
+    let success = 0, failed = 0
+    const empMap = new Map(employees.map(e => [e.code, e.id]))
+
+    for (const row of importData) {
+      try {
+        const empId = empMap.get(row['Employee Code'] || row['code'] || row['Code'])
+        if (!empId) { failed++; continue }
+        const date = row['Date (YYYY-MM-DD)'] || row['Date'] || row['date']
+        const checkIn = row['Check In (HH:MM)'] || row['Check In'] || row['checkIn'] || ''
+        const checkOut = row['Check Out (HH:MM)'] || row['Check Out'] || row['checkOut'] || ''
+        const status = row['Status'] || row['status'] || 'PRESENT'
+        const notes = row['Notes'] || row['notes'] || ''
+
+        const res = await fetch('/api/attendance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: empId, type: 'manual',
+            date, checkIn: checkIn || null, checkOut: checkOut || null,
+            status, notes,
+          })
+        })
+        if (res.ok) success++; else failed++
+      } catch { failed++ }
+    }
+
+    toast.success(lang === 'ar' ? `نجح: ${success}، فشل: ${failed}` : `Success: ${success}, Failed: ${failed}`)
+    setImporting(false); setImportOpen(false); setImportData([]); load()
+  }
+
+  // Monthly summary calculations
+  const monthlySummary = React.useMemo(() => {
+    const now = new Date()
+    const monthRecords = records.filter(r => {
+      const d = new Date(r.date)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+    })
+    const byEmployee = new Map<string, any>()
+    for (const r of monthRecords) {
+      const key = r.employeeId
+      const e = byEmployee.get(key) || {
+        name: r.employee.name, code: r.employee.code,
+        present: 0, late: 0, absent: 0, leave: 0,
+        totalHours: 0, totalOvertime: 0, totalLateMin: 0,
+      }
+      if (r.status === 'PRESENT') e.present++
+      if (r.status === 'LATE') e.late++
+      if (r.status === 'ABSENT') e.absent++
+      if (r.status === 'LEAVE') e.leave++
+      e.totalHours += r.workHours || 0
+      e.totalOvertime += r.overtime || 0
+      e.totalLateMin += r.lateMinutes || 0
+      byEmployee.set(key, e)
+    }
+    return Array.from(byEmployee.values())
+  }, [records])
+
+  // Annual summary
+  const annualSummary = React.useMemo(() => {
+    const now = new Date()
+    const yearRecords = records.filter(r => new Date(r.date).getFullYear() === now.getFullYear())
+    const byMonth = new Map<string, { present: number; late: number; absent: number; leave: number; hours: number; overtime: number }>()
+    for (let m = 0; m < 12; m++) {
+      byMonth.set(`${now.getFullYear()}-${String(m + 1).padStart(2, '0')}`, { present: 0, late: 0, absent: 0, leave: 0, hours: 0, overtime: 0 })
+    }
+    for (const r of yearRecords) {
+      const d = new Date(r.date)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const s = byMonth.get(key)
+      if (!s) continue
+      if (r.status === 'PRESENT') s.present++
+      if (r.status === 'LATE') s.late++
+      if (r.status === 'ABSENT') s.absent++
+      if (r.status === 'LEAVE') s.leave++
+      s.hours += r.workHours || 0
+      s.overtime += r.overtime || 0
+    }
+    return Array.from(byMonth.entries()).map(([month, s]) => ({ month, ...s }))
+  }, [records])
+
   if (loading) return <Skeleton className="h-96" />
 
   const presentToday = records.filter(r => r.status === 'PRESENT' && new Date(r.date).toDateString() === new Date().toDateString()).length
   const lateToday = records.filter(r => r.status === 'LATE' && new Date(r.date).toDateString() === new Date().toDateString()).length
   const absentToday = records.filter(r => r.status === 'ABSENT' && new Date(r.date).toDateString() === new Date().toDateString()).length
+  const totalOvertime = records.reduce((s, r) => s + (r.overtime || 0), 0)
+  const totalLate = records.reduce((s, r) => s + (r.lateMinutes || 0), 0)
+  const totalHours = records.reduce((s, r) => s + (r.workHours || 0), 0)
 
   return (
     <div className="space-y-3">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'حاضر اليوم' : 'Present Today'}</p><p className="text-xl font-bold">{presentToday}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-amber-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'متأخر اليوم' : 'Late Today'}</p><p className="text-xl font-bold">{lateToday}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'غائب اليوم' : 'Absent Today'}</p><p className="text-xl font-bold">{absentToday}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'إجمالي السجلات' : 'Total Records'}</p><p className="text-xl font-bold">{records.length}</p></div></div></Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card className="p-3"><div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'حاضر اليوم' : 'Present'}</p><p className="text-xl font-bold">{presentToday}</p></div></div></Card>
+        <Card className="p-3"><div className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-amber-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'متأخر اليوم' : 'Late'}</p><p className="text-xl font-bold">{lateToday}</p></div></div></Card>
+        <Card className="p-3"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'غائب اليوم' : 'Absent'}</p><p className="text-xl font-bold">{absentToday}</p></div></div></Card>
+        <Card className="p-3"><div className="flex items-center gap-2"><Clock className="h-5 w-5 text-blue-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'ساعات العمل' : 'Work Hours'}</p><p className="text-xl font-bold">{totalHours.toFixed(0)}</p></div></div></Card>
+        <Card className="p-3"><div className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-purple-500" /><div><p className="text-xs text-muted-foreground">{lang === 'ar' ? 'ساعات إضافية' : 'Overtime'}</p><p className="text-xl font-bold">{totalOvertime.toFixed(0)}</p></div></div></Card>
       </div>
 
-      {/* Filters */}
+      {/* View Mode Tabs */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" style={{ right: 12 }} />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t(lang, 'search')} className="h-10 pr-9" />
+        <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
+          <button onClick={() => setViewMode('records')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'records' ? 'gradient-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}>{lang === 'ar' ? 'السجلات' : 'Records'}</button>
+          <button onClick={() => setViewMode('monthly')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'monthly' ? 'gradient-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}>{lang === 'ar' ? 'ملخص شهري' : 'Monthly'}</button>
+          <button onClick={() => setViewMode('annual')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'annual' ? 'gradient-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}>{lang === 'ar' ? 'ملخص سنوي' : 'Annual'}</button>
         </div>
-        <Select value={statusFilter || "_all"} onValueChange={v => setStatusFilter(v === "_all" ? "" : v)}>
-          <SelectTrigger className="w-32 h-10"><SelectValue placeholder={lang === 'ar' ? 'الحالة' : 'Status'} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">{lang === "ar" ? "الكل" : "All"}</SelectItem>
-            <SelectItem value="PRESENT">{lang === 'ar' ? 'حاضر' : 'Present'}</SelectItem>
-            <SelectItem value="LATE">{lang === 'ar' ? 'متأخر' : 'Late'}</SelectItem>
-            <SelectItem value="ABSENT">{lang === 'ar' ? 'غائب' : 'Absent'}</SelectItem>
-            <SelectItem value="LEAVE">{lang === 'ar' ? 'إجازة' : 'Leave'}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={String(days)} onValueChange={v => setDays(parseInt(v))}>
-          <SelectTrigger className="w-32 h-10"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">{lang === 'ar' ? 'اليوم' : 'Today'}</SelectItem>
-            <SelectItem value="7">{lang === 'ar' ? '7 أيام' : '7 days'}</SelectItem>
-            <SelectItem value="30">{lang === 'ar' ? '30 يوم' : '30 days'}</SelectItem>
-            <SelectItem value="90">{lang === 'ar' ? '90 يوم' : '90 days'}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={downloadTemplate}><FileSpreadsheet className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'قالب' : 'Template'}</Button>
+        {hasPermission('hr.create') && (
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'استيراد' : 'Import'}</Button>
+        )}
         <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 ml-1" /> Excel</Button>
         {hasPermission('hr.create') && (
-          <Button size="sm" onClick={() => setCheckInOpen(true)}>
-            <LogIn className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'تسجيل حضور' : 'Check In/Out'}
-          </Button>
+          <Button size="sm" onClick={() => setCheckInOpen(true)}><LogIn className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'حضور/انصراف' : 'Check In/Out'}</Button>
         )}
       </div>
 
-      {/* Table */}
-      <Card className="p-0 overflow-hidden">
-        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 sticky top-0">
-              <tr>
-                <th className="px-3 py-2 text-start">{t(lang, 'date')}</th>
-                <th className="px-3 py-2 text-start">{lang === 'ar' ? 'الموظف' : 'Employee'}</th>
-                <th className="px-3 py-2 text-start">{lang === 'ar' ? 'حضور' : 'In'}</th>
-                <th className="px-3 py-2 text-start">{lang === 'ar' ? 'انصراف' : 'Out'}</th>
-                <th className="px-3 py-2 text-end">{lang === 'ar' ? 'ساعات' : 'Hours'}</th>
-                <th className="px-3 py-2 text-end">{lang === 'ar' ? 'إضافي' : 'OT'}</th>
-                <th className="px-3 py-2 text-end">{lang === 'ar' ? 'تأخير(د)' : 'Late(m)'}</th>
-                <th className="px-3 py-2 text-center">{t(lang, 'status')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                  {lang === 'ar' ? 'لا توجد سجلات' : 'No records'}
-                </td></tr>
-              ) : filtered.map(r => (
-                <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-3 py-2 text-xs">{formatDate(r.date)}</td>
-                  <td className="px-3 py-2">
-                    <p className="font-medium">{r.employee.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{r.employee.code}</p>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{formatTime(r.checkIn)}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{formatTime(r.checkOut)}</td>
-                  <td className="px-3 py-2 text-end font-medium">{r.workHours || '-'}</td>
-                  <td className="px-3 py-2 text-end text-emerald-600 font-medium">{r.overtime || '-'}</td>
-                  <td className="px-3 py-2 text-end text-amber-600 font-medium">{r.lateMinutes || '-'}</td>
-                  <td className="px-3 py-2 text-center"><Badge variant={statusVariants[r.status] || 'default'}>{r.status}</Badge></td>
+      {/* Records View */}
+      {viewMode === 'records' && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" style={{ right: 12 }} />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t(lang, 'search')} className="h-10 pr-9" />
+            </div>
+            <Select value={statusFilter || "_all"} onValueChange={v => setStatusFilter(v === "_all" ? "" : v)}>
+              <SelectTrigger className="w-32 h-10"><SelectValue placeholder={lang === 'ar' ? 'الحالة' : 'Status'} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">{lang === "ar" ? "الكل" : "All"}</SelectItem>
+                <SelectItem value="PRESENT">{lang === 'ar' ? 'حاضر' : 'Present'}</SelectItem>
+                <SelectItem value="LATE">{lang === 'ar' ? 'متأخر' : 'Late'}</SelectItem>
+                <SelectItem value="ABSENT">{lang === 'ar' ? 'غائب' : 'Absent'}</SelectItem>
+                <SelectItem value="LEAVE">{lang === 'ar' ? 'إجازة' : 'Leave'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(days)} onValueChange={v => setDays(parseInt(v))}>
+              <SelectTrigger className="w-32 h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">{lang === 'ar' ? 'اليوم' : 'Today'}</SelectItem>
+                <SelectItem value="7">{lang === 'ar' ? '7 أيام' : '7 days'}</SelectItem>
+                <SelectItem value="30">{lang === 'ar' ? '30 يوم' : '30 days'}</SelectItem>
+                <SelectItem value="90">{lang === 'ar' ? '90 يوم' : '90 days'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-start">{t(lang, 'date')}</th>
+                    <th className="px-3 py-2 text-start">{lang === 'ar' ? 'الموظف' : 'Employee'}</th>
+                    <th className="px-3 py-2 text-start">{lang === 'ar' ? 'حضور' : 'In'}</th>
+                    <th className="px-3 py-2 text-start">{lang === 'ar' ? 'انصراف' : 'Out'}</th>
+                    <th className="px-3 py-2 text-end">{lang === 'ar' ? 'ساعات' : 'Hours'}</th>
+                    <th className="px-3 py-2 text-end">{lang === 'ar' ? 'إضافي' : 'OT'}</th>
+                    <th className="px-3 py-2 text-end">{lang === 'ar' ? 'تأخير(د)' : 'Late(m)'}</th>
+                    <th className="px-3 py-2 text-center">{t(lang, 'status')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground"><Clock className="h-12 w-12 mx-auto mb-2 opacity-30" />{lang === 'ar' ? 'لا توجد سجلات' : 'No records'}</td></tr>
+                  ) : filtered.map(r => (
+                    <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-3 py-2 text-xs">{formatDate(r.date)}</td>
+                      <td className="px-3 py-2"><p className="font-medium">{r.employee.name}</p><p className="text-xs text-muted-foreground font-mono">{r.employee.code}</p></td>
+                      <td className="px-3 py-2 font-mono text-xs">{formatTime(r.checkIn)}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{formatTime(r.checkOut)}</td>
+                      <td className="px-3 py-2 text-end font-medium">{r.workHours || '-'}</td>
+                      <td className="px-3 py-2 text-end text-emerald-600 font-medium">{r.overtime || '-'}</td>
+                      <td className="px-3 py-2 text-end text-amber-600 font-medium">{r.lateMinutes || '-'}</td>
+                      <td className="px-3 py-2 text-center"><Badge variant={statusVariants[r.status] || 'default'}>{r.status}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* Monthly Summary View */}
+      {viewMode === 'monthly' && (
+        <Card className="p-0 overflow-hidden">
+          <div className="p-4 border-b border-border"><h3 className="font-bold">{lang === 'ar' ? `ملخص الحضور - ${new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}` : `Monthly Summary - ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-3 text-start">{lang === 'ar' ? 'الموظف' : 'Employee'}</th>
+                  <th className="px-3 py-2 text-center text-emerald-600">حاضر</th>
+                  <th className="px-3 py-2 text-center text-amber-600">متأخر</th>
+                  <th className="px-3 py-2 text-center text-red-600">غائب</th>
+                  <th className="px-3 py-2 text-center text-purple-600">إجازة</th>
+                  <th className="px-3 py-2 text-end">ساعات العمل</th>
+                  <th className="px-3 py-2 text-end">إضافي</th>
+                  <th className="px-3 py-2 text-end">تأخير(د)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody>
+                {monthlySummary.length === 0 ? (
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">{lang === 'ar' ? 'لا توجد بيانات لهذا الشهر' : 'No data this month'}</td></tr>
+                ) : monthlySummary.map((e, i) => (
+                  <tr key={i} className="border-t border-border hover:bg-muted/30">
+                    <td className="px-4 py-3"><p className="font-medium">{e.name}</p><p className="text-xs text-muted-foreground font-mono">{e.code}</p></td>
+                    <td className="px-3 py-2 text-center font-bold text-emerald-600">{e.present}</td>
+                    <td className="px-3 py-2 text-center font-bold text-amber-600">{e.late}</td>
+                    <td className="px-3 py-2 text-center font-bold text-red-600">{e.absent}</td>
+                    <td className="px-3 py-2 text-center font-bold text-purple-600">{e.leave}</td>
+                    <td className="px-3 py-2 text-end font-medium">{e.totalHours.toFixed(1)}</td>
+                    <td className="px-3 py-2 text-end text-emerald-600 font-medium">{e.totalOvertime.toFixed(1)}</td>
+                    <td className="px-3 py-2 text-end text-amber-600 font-medium">{e.totalLateMin}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Annual Summary View */}
+      {viewMode === 'annual' && (
+        <Card className="p-0 overflow-hidden">
+          <div className="p-4 border-b border-border"><h3 className="font-bold">{lang === 'ar' ? `ملخص سنوي - ${new Date().getFullYear()}` : `Annual Summary - ${new Date().getFullYear()}`}</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-3 text-start">{lang === 'ar' ? 'الشهر' : 'Month'}</th>
+                  <th className="px-3 py-2 text-center text-emerald-600">حاضر</th>
+                  <th className="px-3 py-2 text-center text-amber-600">متأخر</th>
+                  <th className="px-3 py-2 text-center text-red-600">غائب</th>
+                  <th className="px-3 py-2 text-center text-purple-600">إجازة</th>
+                  <th className="px-3 py-2 text-end">ساعات</th>
+                  <th className="px-3 py-2 text-end">إضافي</th>
+                </tr>
+              </thead>
+              <tbody>
+                {annualSummary.map((m, i) => (
+                  <tr key={i} className="border-t border-border hover:bg-muted/30">
+                    <td className="px-4 py-3 font-medium">{new Date(m.month + '-01').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'long' })}</td>
+                    <td className="px-3 py-2 text-center font-bold text-emerald-600">{m.present}</td>
+                    <td className="px-3 py-2 text-center font-bold text-amber-600">{m.late}</td>
+                    <td className="px-3 py-2 text-center font-bold text-red-600">{m.absent}</td>
+                    <td className="px-3 py-2 text-center font-bold text-purple-600">{m.leave}</td>
+                    <td className="px-3 py-2 text-end font-medium">{m.hours.toFixed(0)}</td>
+                    <td className="px-3 py-2 text-end text-emerald-600 font-medium">{m.overtime.toFixed(0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Check In/Out Dialog */}
       <Dialog open={checkInOpen} onOpenChange={setCheckInOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{lang === 'ar' ? 'تسجيل حضور/انصراف' : 'Check In / Out'}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <Label>{lang === 'ar' ? 'اختر الموظف' : 'Select Employee'}</Label>
+            <div><Label>{lang === 'ar' ? 'اختر الموظف' : 'Select Employee'}</Label>
               <Select value={selectedEmp} onValueChange={setSelectedEmp}>
                 <SelectTrigger><SelectValue placeholder={lang === 'ar' ? 'اختر' : 'Select'} /></SelectTrigger>
                 <SelectContent>{employees.map(e => <SelectItem key={e.id} value={e.id}>{e.code} - {e.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Button onClick={() => doCheckIn('check-in')} className="h-14 btn-primary-gradient">
-                <LogIn className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'تسجيل حضور' : 'Check In'}
-              </Button>
-              <Button onClick={() => doCheckIn('check-out')} variant="outline" className="h-14">
-                <LogOut className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'تسجيل انصراف' : 'Check Out'}
-              </Button>
+              <Button onClick={() => doCheckIn('check-in')} className="h-14 btn-primary-gradient"><LogIn className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'تسجيل حضور' : 'Check In'}</Button>
+              <Button onClick={() => doCheckIn('check-out')} variant="outline" className="h-14"><LogOut className="h-5 w-5 ml-2" /> {lang === 'ar' ? 'تسجيل انصراف' : 'Check Out'}</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{lang === 'ar' ? 'استيراد الحضور من Excel/CSV' : 'Import Attendance'}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="rounded-xl border-2 border-dashed border-border p-6 text-center">
+              <Upload className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm font-medium mb-2">{lang === 'ar' ? 'اختر ملف Excel أو CSV' : 'Choose Excel or CSV file'}</p>
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="hidden" id="att-import" />
+              <Button variant="outline" size="sm" asChild><label htmlFor="att-import" className="cursor-pointer">{lang === 'ar' ? 'اختر ملف' : 'Choose file'}</label></Button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={downloadTemplate} className="w-full"><FileSpreadsheet className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'تحميل قالب Excel' : 'Download template'}</Button>
+            {importData.length > 0 && (
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
+                <table className="w-full text-xs"><thead className="bg-muted/50 sticky top-0"><tr>{Object.keys(importData[0]).map(k => <th key={k} className="px-2 py-1 text-start">{k}</th>)}</tr></thead><tbody>{importData.slice(0, 5).map((r, i) => <tr key={i} className="border-t">{Object.values(r).map((v, j) => <td key={j} className="px-2 py-1">{String(v)}</td>)}</tr>)}</tbody></table>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>{t(lang, 'cancel')}</Button>
+            <Button onClick={doImport} disabled={importing || importData.length === 0}>{importing ? '...' : `${lang === 'ar' ? 'استيراد' : 'Import'} (${importData.length})`}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

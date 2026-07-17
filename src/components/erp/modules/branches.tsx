@@ -9,12 +9,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Building2, Plus, Trash2, Edit, MapPin, Phone, Users, Search } from 'lucide-react'
+import { Building2, Plus, Trash2, Edit, MapPin, Phone, Users, Search, Wallet, Landmark, TrendingUp, TrendingDown, Package, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
+
+type BranchStats = {
+  employees: number
+  cashCount: number
+  cashTotal: number
+  bankCount: number
+  bankTotal: number
+  inventoryValue: number
+  totalSales: number
+  totalPurchases: number
+  totalExpenses: number
+  profit: number
+}
 
 type Branch = {
   id: string; name: string; code: string; address: string | null; phone: string | null
-  isActive: boolean; _count?: { employees: number }
+  isActive: boolean; _count?: { employees: number }; stats?: BranchStats
 }
 
 export function Branches() {
@@ -84,6 +97,43 @@ export function Branches() {
                   {b.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> {b.phone}</div>}
                   <div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /> {b._count?.employees || 0} {lang === 'ar' ? 'موظف' : 'employees'}</div>
                 </div>
+
+                {/* Stats Grid */}
+                {b.stats && (
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
+                    <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 p-2 text-center">
+                      <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'المبيعات' : 'Sales'}</p>
+                      <p className="text-sm font-bold text-emerald-600">{new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.totalSales)}</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 text-center">
+                      <TrendingDown className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'المشتريات' : 'Purchases'}</p>
+                      <p className="text-sm font-bold text-amber-600">{new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.totalPurchases)}</p>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-2 text-center">
+                      <DollarSign className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'الربح' : 'Profit'}</p>
+                      <p className={`text-sm font-bold ${b.stats.profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.profit)}</p>
+                    </div>
+                    <div className="rounded-lg bg-purple-50 dark:bg-purple-950/20 p-2 text-center">
+                      <Package className="h-4 w-4 text-purple-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'قيمة المخزون' : 'Inventory'}</p>
+                      <p className="text-sm font-bold text-purple-600">{new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.inventoryValue)}</p>
+                    </div>
+                    <div className="rounded-lg bg-teal-50 dark:bg-teal-950/20 p-2 text-center">
+                      <Wallet className="h-4 w-4 text-teal-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'الخزائن' : 'Cash'}</p>
+                      <p className="text-sm font-bold text-teal-600">{b.stats.cashCount} ({new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.cashTotal)})</p>
+                    </div>
+                    <div className="rounded-lg bg-indigo-50 dark:bg-indigo-950/20 p-2 text-center">
+                      <Landmark className="h-4 w-4 text-indigo-500 mx-auto mb-1" />
+                      <p className="text-[10px] text-muted-foreground">{lang === 'ar' ? 'البنوك' : 'Banks'}</p>
+                      <p className="text-sm font-bold text-indigo-600">{b.stats.bankCount} ({new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 }).format(b.stats.bankTotal)})</p>
+                    </div>
+                  </div>
+                )}
+
                 {hasPermission('branches.manage') && (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-border">
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => { setEditItem(b); setDialogOpen(true) }}><Edit className="h-4 w-4 ml-1" /> {t(lang, 'edit')}</Button>
