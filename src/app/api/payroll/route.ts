@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     ? await db.employee.findMany({ where: { id: { in: employeeIds }, archived: false } })
     : await db.employee.findMany({ where: { archived: false, status: 'ACTIVE' } })
 
-  const results = []
+  const results: any[] = []
   for (const emp of employees) {
     // Check if payroll already exists
     const existing = await db.payroll.findUnique({
