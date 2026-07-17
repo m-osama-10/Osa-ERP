@@ -52,7 +52,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = React.useState<Lang>('ar')
   const [theme, setTheme] = React.useState<Theme>('light')
   const [activeModule, setActiveModule] = React.useState('dashboard')
-  const [sidebarOpen, setSidebarOpen] = React.useState(true)
+  const [sidebarOpen, setSidebarOpen] = React.useState(false) // Closed by default (mobile-friendly)
   const [showLogin, setShowLogin] = React.useState(false)
   const [displayCurrency, setDisplayCurrencyState] = React.useState<CurrencyCode>('EGP')
   const [exchangeRates, setExchangeRates] = React.useState<ExchangeRates>({})
@@ -67,6 +67,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (sLang) setLangState(sLang)
     if (sTheme) setTheme(sTheme)
     if (sCur) setDisplayCurrencyState(sCur)
+
+    // Auto-open sidebar on desktop, closed on mobile
+    if (typeof window !== 'undefined') {
+      setSidebarOpen(window.innerWidth >= 1024)
+    }
   }, [])
 
   React.useEffect(() => {

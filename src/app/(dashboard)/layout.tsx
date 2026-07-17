@@ -9,7 +9,15 @@ import { Login } from '@/components/erp/login'
 import { LandingPage } from '@/components/landing'
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
-  const { user, loadingAuth, showLogin } = useApp()
+  const { user, loadingAuth, showLogin, sidebarOpen, lang } = useApp()
+  const [isDesktop, setIsDesktop] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024)
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   if (loadingAuth) return <Loading label="جاري التحميل..." />
   if (!user) {
@@ -17,12 +25,21 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     return <LandingPage />
   }
 
+  // Desktop: sidebar pushes content with padding when open
+  // Mobile: sidebar is overlay drawer — content is always full width (no padding)
+  const paddingStyle = isDesktop && sidebarOpen
+    ? { [lang === 'ar' ? 'paddingRight' : 'paddingLeft']: '18rem' } as React.CSSProperties
+    : {}
+
   return (
-    <div className="min-h-screen bg-background grid-bg">
+    <div className="min-h-screen bg-background grid-bg overflow-x-hidden">
       <Sidebar />
-      <div className="flex min-h-screen flex-col transition-all duration-300" style={{ paddingRight: '18rem' }}>
+      <div
+        className="flex min-h-screen flex-col transition-all duration-300 w-full max-w-full"
+        style={paddingStyle}
+      >
         <TopBar />
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6 w-full max-w-full overflow-x-hidden">
           {children}
         </main>
         <footer className="border-t border-border bg-card/50 px-6 py-4 text-center text-xs text-muted-foreground">

@@ -124,6 +124,12 @@ export function Sidebar() {
                       <Link
                         key={item.href}
                         href={item.href}
+                        onClick={() => {
+                          // Close sidebar on mobile when navigating
+                          if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                            setSidebarOpen(false)
+                          }
+                        }}
                         className={cn(
                           'group relative flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-300',
                           isActive
