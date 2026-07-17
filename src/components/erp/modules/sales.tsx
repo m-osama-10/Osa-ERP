@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, ShoppingCart, FileText, Receipt, Trash2, Printer, Loader2 } from 'lucide-react'
+import { Plus, ShoppingCart, FileText, Receipt, Trash2, Printer, Loader2, RotateCcw, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Invoice = {
@@ -63,14 +63,18 @@ export function Sales() {
   return (
     <div className="space-y-6 animate-in-fade">
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="invoices" className="flex items-center gap-2"><Receipt className="h-4 w-4" /> {t(lang, 'invoices')}</TabsTrigger>
           <TabsTrigger value="pos" className="flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> {t(lang, 'pos')}</TabsTrigger>
           <TabsTrigger value="purchases" className="flex items-center gap-2"><FileText className="h-4 w-4" /> {t(lang, 'purchases')}</TabsTrigger>
+          <TabsTrigger value="quotes" className="flex items-center gap-2"><FileText className="h-4 w-4" /> {lang === 'ar' ? 'عروض أسعار' : 'Quotes'}</TabsTrigger>
+          <TabsTrigger value="returns" className="flex items-center gap-2"><RotateCcw className="h-4 w-4" /> {lang === 'ar' ? 'مرتجعات' : 'Returns'}</TabsTrigger>
         </TabsList>
         <TabsContent value="invoices"><Invoices /></TabsContent>
         <TabsContent value="pos"><POS /></TabsContent>
         <TabsContent value="purchases"><Purchases /></TabsContent>
+        <TabsContent value="quotes"><Quotations /></TabsContent>
+        <TabsContent value="returns"><SalesReturns /></TabsContent>
       </Tabs>
     </div>
   )
@@ -533,5 +537,281 @@ function Purchases() {
         </table>
       </div>
     </Card>
+  )
+}
+
+// ============ Quotations ============
+function Quotations() {
+  const { lang, hasPermission } = useApp()
+  const [quotes, setQuotes] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [customers, setCustomers] = React.useState<any[]>([])
+  const [items, setItems] = React.useState<any[]>([])
+  const [customerId, setCustomerId] = React.useState('')
+  const [date, setDate] = React.useState(new Date().toISOString().split('T')[0])
+  const [lines, setLines] = React.useState<any[]>([])
+  const [submitting, setSubmitting] = React.useState(false)
+
+  const load = () => {
+    fetch('/api/quotations').then(r => r.json()).then(d => { setQuotes(Array.isArray(d) ? d : []); setLoading(false) })
+  }
+  React.useEffect(() => {
+    load()
+    fetch('/api/customers').then(r => r.json()).then(setCustomers)
+    fetch('/api/items').then(r => r.json()).then(setItems)
+  }, [])
+
+  const subtotal = lines.reduce((s, l) => s + l.total, 0)
+  const tax = subtotal * 0.14
+  const total = subtotal + tax
+
+  const addLine = () => setLines([...lines, { itemId: '', quantity: 1, price: 0, total: 0 }])
+  const updateLine = (i: number, patch: any) => {
+    setLines(lines.map((l, j) => {
+      if (j !== i) return l
+      const updated = { ...l, ...patch }
+      if (patch.itemId) {
+        const item = items.find((it: any) => it.id === patch.itemId)
+        if (item) { updated.price = item.salePrice; updated.total = item.salePrice * updated.quantity }
+      }
+      if (patch.quantity !== undefined) updated.total = updated.price * updated.quantity
+      return updated
+    }))
+  }
+
+  const submit = async () => {
+    if (submitting) return
+    if (!customerId || lines.length === 0) { toast.error(lang === 'ar' ? 'اختر عميل وأصناف' : 'Select customer and items'); return }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/quotations', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, date, items: lines.filter(l => l.itemId) }),
+      })
+      if (res.ok) {
+        toast.success(lang === 'ar' ? 'تم إنشاء عرض السعر' : 'Quotation created')
+        setCustomerId(''); setLines([]); setDialogOpen(false); load()
+      } else { const e = await res.json(); toast.error(e.error || 'Error') }
+    } finally { setSubmitting(false) }
+  }
+
+  const convertToInvoice = async (id: string) => {
+    if (!confirm(lang === 'ar' ? 'تحويل لفاتورة؟' : 'Convert to invoice?')) return
+    const res = await fetch('/api/quotations', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action: 'convert' })
+    })
+    if (res.ok) { toast.success(lang === 'ar' ? 'تم التحويل لفاتورة' : 'Converted to invoice'); load() }
+    else { const e = await res.json(); toast.error(e.error || 'Error') }
+  }
+
+  if (loading) return <Skeleton className="h-96" />
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        {hasPermission('sales.create') && <Button size="sm" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'عرض سعر جديد' : 'New Quote'}</Button>}
+      </div>
+      <Card className="p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-start">{lang === 'ar' ? 'رقم' : 'No'}</th>
+                <th className="px-4 py-3 text-start">{lang === 'ar' ? 'العميل' : 'Customer'}</th>
+                <th className="px-4 py-3 text-start">{t(lang, 'date')}</th>
+                <th className="px-4 py-3 text-end">{t(lang, 'total')}</th>
+                <th className="px-4 py-3 text-center">{lang === 'ar' ? 'إجراء' : 'Action'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quotes.length === 0 ? (
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground"><FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />{lang === 'ar' ? 'لا توجد عروض أسعار' : 'No quotations'}</td></tr>
+              ) : quotes.map(q => (
+                <tr key={q.id} className="border-t border-border hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono font-semibold text-primary">{q.invoiceNo}</td>
+                  <td className="px-4 py-3 font-medium">{q.customer?.name || '-'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(q.date)}</td>
+                  <td className="px-4 py-3 text-end font-semibold">{formatCurrency(q.total)}</td>
+                  <td className="px-4 py-3 text-center">
+                    {hasPermission('sales.create') && (
+                      <Button size="sm" variant="outline" onClick={() => convertToInvoice(q.id)}>
+                        {lang === 'ar' ? 'تحويل لفاتورة' : 'Convert'}
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{lang === 'ar' ? 'عرض سعر جديد' : 'New Quotation'}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>{lang === 'ar' ? 'العميل' : 'Customer'} *</Label>
+                <Select value={customerId} onValueChange={setCustomerId}>
+                  <SelectTrigger><SelectValue placeholder={lang === 'ar' ? 'اختر' : 'Select'} /></SelectTrigger>
+                  <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>{t(lang, 'date')}</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+            </div>
+            <div className="rounded-xl border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr><th className="px-3 py-2 text-start">{t(lang, 'items')}</th><th className="px-3 py-2 text-end w-24">{t(lang, 'quantity')}</th><th className="px-3 py-2 text-end w-32">{t(lang, 'price')}</th><th className="px-3 py-2 text-end w-32">{t(lang, 'total')}</th><th className="w-10"></th></tr></thead>
+                <tbody>
+                  {lines.map((l, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="px-3 py-2"><Select value={l.itemId} onValueChange={v => updateLine(i, { itemId: v })}><SelectTrigger className="h-8"><SelectValue placeholder={lang === 'ar' ? 'اختر' : 'Select'} /></SelectTrigger><SelectContent>{items.map(it => <SelectItem key={it.id} value={it.id}>{it.sku} - {it.name}</SelectItem>)}</SelectContent></Select></td>
+                      <td className="px-3 py-2"><Input type="number" className="h-8 text-end" value={l.quantity} onChange={e => updateLine(i, { quantity: parseFloat(e.target.value) || 1 })} /></td>
+                      <td className="px-3 py-2"><Input type="number" className="h-8 text-end" value={l.price} onChange={e => updateLine(i, { price: parseFloat(e.target.value) || 0, total: (parseFloat(e.target.value) || 0) * l.quantity })} /></td>
+                      <td className="px-3 py-2 text-end font-medium">{formatCurrency(l.total)}</td>
+                      <td className="px-3 py-2"><Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setLines(lines.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Button variant="outline" size="sm" onClick={addLine}><Plus className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'إضافة صنف' : 'Add item'}</Button>
+            <div className="flex justify-end"><div className="w-64 space-y-2 rounded-xl border border-border p-4 bg-muted/30"><div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'المجموع' : 'Subtotal'}</span><span>{formatCurrency(subtotal)}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT 14%</span><span>{formatCurrency(tax)}</span></div><div className="flex justify-between border-t border-border pt-2 font-bold text-base"><span>{t(lang, 'total')}</span><span className="text-primary">{formatCurrency(total)}</span></div></div></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t(lang, 'cancel')}</Button><Button onClick={submit} disabled={submitting}>{submitting ? '...' : t(lang, 'save')}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ============ Sales Returns ============
+function SalesReturns() {
+  const { lang, hasPermission } = useApp()
+  const [returns, setReturns] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [customers, setCustomers] = React.useState<any[]>([])
+  const [items, setItems] = React.useState<any[]>([])
+  const [customerId, setCustomerId] = React.useState('')
+  const [date, setDate] = React.useState(new Date().toISOString().split('T')[0])
+  const [lines, setLines] = React.useState<any[]>([])
+  const [submitting, setSubmitting] = React.useState(false)
+
+  const load = () => {
+    fetch('/api/sales-returns').then(r => r.json()).then(d => { setReturns(Array.isArray(d) ? d : []); setLoading(false) })
+  }
+  React.useEffect(() => {
+    load()
+    fetch('/api/customers').then(r => r.json()).then(setCustomers)
+    fetch('/api/items').then(r => r.json()).then(setItems)
+  }, [])
+
+  const subtotal = lines.reduce((s, l) => s + l.total, 0)
+  const tax = subtotal * 0.14
+  const total = subtotal + tax
+
+  const addLine = () => setLines([...lines, { itemId: '', quantity: 1, price: 0, total: 0 }])
+  const updateLine = (i: number, patch: any) => {
+    setLines(lines.map((l, j) => {
+      if (j !== i) return l
+      const updated = { ...l, ...patch }
+      if (patch.itemId) {
+        const item = items.find((it: any) => it.id === patch.itemId)
+        if (item) { updated.price = item.salePrice; updated.total = item.salePrice * updated.quantity }
+      }
+      if (patch.quantity !== undefined) updated.total = updated.price * updated.quantity
+      return updated
+    }))
+  }
+
+  const submit = async () => {
+    if (submitting) return
+    if (!customerId || lines.length === 0) { toast.error(lang === 'ar' ? 'اختر عميل وأصناف' : 'Select customer and items'); return }
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/sales-returns', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, date, items: lines.filter(l => l.itemId) }),
+      })
+      if (res.ok) {
+        toast.success(lang === 'ar' ? 'تم إنشاء المرتجع' : 'Return created')
+        setCustomerId(''); setLines([]); setDialogOpen(false); load()
+      } else { const e = await res.json(); toast.error(e.error || 'Error') }
+    } finally { setSubmitting(false) }
+  }
+
+  if (loading) return <Skeleton className="h-96" />
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        {hasPermission('sales.create') && <Button size="sm" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'مرتجع مبيعات' : 'New Return'}</Button>}
+      </div>
+      <Card className="p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-start">{lang === 'ar' ? 'رقم' : 'No'}</th>
+                <th className="px-4 py-3 text-start">{lang === 'ar' ? 'العميل' : 'Customer'}</th>
+                <th className="px-4 py-3 text-start">{t(lang, 'date')}</th>
+                <th className="px-4 py-3 text-end">{t(lang, 'total')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {returns.length === 0 ? (
+                <tr><td colSpan={4} className="px-4 py-12 text-center text-muted-foreground"><RotateCcw className="h-12 w-12 mx-auto mb-2 opacity-30" />{lang === 'ar' ? 'لا توجد مرتجعات' : 'No returns'}</td></tr>
+              ) : returns.map(r => (
+                <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono font-semibold text-primary">{r.invoiceNo}</td>
+                  <td className="px-4 py-3 font-medium">{r.customer?.name || '-'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(r.date)}</td>
+                  <td className="px-4 py-3 text-end font-semibold">{formatCurrency(r.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{lang === 'ar' ? 'مرتجع مبيعات جديد' : 'New Sales Return'}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>{lang === 'ar' ? 'العميل' : 'Customer'} *</Label>
+                <Select value={customerId} onValueChange={setCustomerId}>
+                  <SelectTrigger><SelectValue placeholder={lang === 'ar' ? 'اختر' : 'Select'} /></SelectTrigger>
+                  <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>{t(lang, 'date')}</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+            </div>
+            <div className="rounded-xl border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr><th className="px-3 py-2 text-start">{t(lang, 'items')}</th><th className="px-3 py-2 text-end w-24">{t(lang, 'quantity')}</th><th className="px-3 py-2 text-end w-32">{t(lang, 'price')}</th><th className="px-3 py-2 text-end w-32">{t(lang, 'total')}</th><th className="w-10"></th></tr></thead>
+                <tbody>
+                  {lines.map((l, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="px-3 py-2"><Select value={l.itemId} onValueChange={v => updateLine(i, { itemId: v })}><SelectTrigger className="h-8"><SelectValue placeholder={lang === 'ar' ? 'اختر' : 'Select'} /></SelectTrigger><SelectContent>{items.map(it => <SelectItem key={it.id} value={it.id}>{it.sku} - {it.name}</SelectItem>)}</SelectContent></Select></td>
+                      <td className="px-3 py-2"><Input type="number" className="h-8 text-end" value={l.quantity} onChange={e => updateLine(i, { quantity: parseFloat(e.target.value) || 1 })} /></td>
+                      <td className="px-3 py-2"><Input type="number" className="h-8 text-end" value={l.price} onChange={e => updateLine(i, { price: parseFloat(e.target.value) || 0, total: (parseFloat(e.target.value) || 0) * l.quantity })} /></td>
+                      <td className="px-3 py-2 text-end font-medium">{formatCurrency(l.total)}</td>
+                      <td className="px-3 py-2"><Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setLines(lines.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Button variant="outline" size="sm" onClick={addLine}><Plus className="h-4 w-4 ml-1" /> {lang === 'ar' ? 'إضافة صنف' : 'Add item'}</Button>
+            <div className="flex justify-end"><div className="w-64 space-y-2 rounded-xl border border-border p-4 bg-muted/30"><div className="flex justify-between text-sm"><span className="text-muted-foreground">{lang === 'ar' ? 'المجموع' : 'Subtotal'}</span><span>{formatCurrency(subtotal)}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT 14%</span><span>{formatCurrency(tax)}</span></div><div className="flex justify-between border-t border-border pt-2 font-bold text-base"><span>{t(lang, 'total')}</span><span className="text-primary">{formatCurrency(total)}</span></div></div></div>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t(lang, 'cancel')}</Button><Button onClick={submit} disabled={submitting}>{submitting ? '...' : t(lang, 'save')}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }
