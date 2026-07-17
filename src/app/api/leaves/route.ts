@@ -51,6 +51,39 @@ export async function PUT(req: NextRequest) {
   const body = await req.json()
   const { id, action } = body // action: 'approve' | 'reject'
 
+  // Get the leave request first
+  const existingLeave = await db.leave.findUnique({
+    where: { id },
+    include: { employee: true }
+  })
+  if (!existingLeave) {
+    return NextResponse.json({ error: 'طلب الإجازة غير موجود' }, { status: 404 })
+  }
+  if (existingLeave.status !== 'PENDING') {
+    return NextResponse.json({ error: 'تم معالجة هذا الطلب بالفعل' }, { status: 400 })
+  }
+
+  // If approving, check leave balance
+  if (action === 'approve') {
+    // Calculate annual leave balance used
+    const approvedLeaves = await db.leave.findMany({
+      where: {
+        employeeId: existingLeave.employeeId,
+        type: existingLeave.type,
+        status: 'APPROVED',
+      }
+    })
+    const usedDays = approvedLeaves.reduce((s, l) => s + l.days, 0)
+    const annualBalance = 21 // Default: 21 days annual leave
+    const remaining = annualBalance - usedDays
+
+    if (existingLeave.type !== 'UNPAID' && remaining < existingLeave.days) {
+      return NextResponse.json({
+        error: `رصيد الإجازة غير كافٍ. المتبقي: ${remaining} يوم، المطلوب: ${existingLeave.days} يوم`
+      }, { status: 400 })
+    }
+  }
+
   const leave = await db.leave.update({
     where: { id },
     data: {

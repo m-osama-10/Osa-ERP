@@ -25,29 +25,37 @@ export async function GET(req: NextRequest) {
       db.supplier.count(),
       db.item.count(),
       db.employee.count(),
-      db.invoice.findMany({ select: { date: true, total: true, status: true }, orderBy: { date: 'desc' }, take: 100 }),
+      db.invoice.findMany({ select: { date: true, total: true, status: true, type: true }, orderBy: { date: 'desc' }, take: 100 }),
       db.customer.findMany({ select: { name: true, nameEn: true, balance: true }, orderBy: { balance: 'desc' }, take: 5 }),
-      db.item.findMany({ select: { name: true, nameEn: true, sku: true, qtyOnHand: true, salePrice: true }, take: 100 }),
+      db.item.findMany({ select: { name: true, nameEn: true, sku: true, qtyOnHand: true, salePrice: true, reorderLevel: true, costPrice: true }, take: 100 }),
       db.account.findMany({ include: { parent: true } }),
       db.journalEntry.findMany({ include: { lines: { include: { account: true } } }, orderBy: { date: 'desc' }, take: 50 }),
     ])
 
-    // Monthly sales (last 6 months)
+    // Monthly sales (last 6 months) — real data from invoices
     const now = new Date()
     const monthlySales: { month: string; sales: number; purchases: number }[] = []
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
-      const monthName = d.toLocaleDateString('ar-SA', { month: 'short' })
-      const sales = invoices.filter(inv => inv.date >= d && inv.date <= monthEnd).reduce((s, inv) => s + inv.total, 0)
-      monthlySales.push({ month: monthName, sales, purchases: 0 })
+      const monthName = d.toLocaleDateString('ar-EG', { month: 'short' })
+      const sales = invoices.filter(inv => inv.date >= d && inv.date <= monthEnd && inv.type !== 'RETURN' && inv.type !== 'QUOTE').reduce((s, inv) => s + inv.total, 0)
+      const purchases = totalPurchasesAgg ? (await db.purchase.findMany({
+        where: { date: { gte: d, lte: monthEnd }, status: { not: 'RETURN' } },
+        select: { total: true }
+      })).reduce((s, p) => s + p.total, 0) : 0
+      monthlySales.push({ month: monthName, sales, purchases })
     }
 
-    // Top customers
-    const topCustomers = customers.map(c => ({ name: c.name, nameEn: c.nameEn, balance: c.balance }))
+    // Top customers — real balances
+    const topCustomers = customers
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 5)
+      .map(c => ({ name: c.name, nameEn: c.nameEn, balance: c.balance }))
 
-    // Low stock items
-    const lowStockItems = items.filter(i => i.qtyOnHand < 20).map(i => ({ name: i.name, nameEn: i.nameEn, sku: i.sku, qty: i.qtyOnHand }))
+    // Low stock items — using reorderLevel from each item
+    const lowStockItems = items.filter(i => i.qtyOnHand < i.reorderLevel).map(i => ({ name: i.name, nameEn: i.nameEn, sku: i.sku, qty: i.qtyOnHand, reorderLevel: i.reorderLevel }))
 
     // Invoice status distribution
     const statusCount = { PAID: 0, UNPAID: 0, PARTIAL: 0 }
