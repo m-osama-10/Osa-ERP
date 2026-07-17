@@ -3,10 +3,6 @@
 -- Run this in Supabase SQL Editor AFTER running schema.sql
 -- ============================================
 
--- Passwords are pre-hashed with bcrypt (10 rounds)
--- Owner: Osama@2026
--- Demo: Demo@123
-
 -- ============== Company & Branches ==============
 INSERT INTO "Company" ("id", "name", "nameEn", "taxNo", "phone", "email", "address", "currency", "createdAt")
 VALUES ('co001', 'شركة أوسا التجارية', 'Osa Trading Co.', '300000000000003', '+20 2 234 5678', 'info@osa-erp.com', 'القاهرة، جمهورية مصر العربية', 'EGP', NOW())
@@ -132,14 +128,14 @@ VALUES
 ('emp008', 'EMP-008', 'هند الزهراني', 'Hind Al-Zahrani', NULL, NULL, 'محاسبة أولى', 'المالية', 'br001', '2021-12-05', 17000, 4000, 0, 0, 'ACTIVE', false, NOW())
 ON CONFLICT (code) DO NOTHING;
 
--- ============== Users (pre-hashed passwords) ==============
--- Owner: Osama@2026 → bcrypt hash
+-- ============== Users (REAL bcrypt hashes) ==============
+-- Owner: Osama@2026
 INSERT INTO "User" ("id", "email", "name", "password", "role", "branchId", "permissions", "twoFA", "isActive", "createdAt")
 VALUES (
   'usr_owner',
   'mohamed.osama@osa-erp.com',
   'محمد أسامة',
-  '$2b$10$wKqP.j4K3N5Z6Y7X8W9V0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z',
+  '$2b$10$MrjPaaNxbMMexc8dQHRq5ezB2KtGGp2aGUVKOpTj8lfb1RMqnL2N2',
   'ADMIN',
   'br001',
   '["dashboard.view","accounting.view","accounting.create","accounting.edit","accounting.delete","customers.view","customers.create","customers.edit","customers.delete","suppliers.view","suppliers.create","suppliers.edit","suppliers.delete","treasury.view","treasury.create","treasury.edit","inventory.view","inventory.create","inventory.edit","inventory.delete","production.view","production.create","production.edit","hr.view","hr.create","hr.edit","hr.delete","hr.salary.view","sales.view","sales.create","sales.edit","sales.delete","pos.use","representatives.view","representatives.manage","reports.view","reports.export","branches.view","branches.manage","permissions.view","permissions.manage","users.manage","currencies.view","currencies.manage","profitability.view","profitability.export","settings.view","settings.manage"]',
@@ -149,13 +145,13 @@ VALUES (
 )
 ON CONFLICT (email) DO NOTHING;
 
--- Demo: Demo@123 → bcrypt hash
+-- Demo: Demo@123
 INSERT INTO "User" ("id", "email", "name", "password", "role", "branchId", "permissions", "twoFA", "isActive", "createdAt")
 VALUES (
   'usr_demo',
   'demo@osaerp.com',
   'حساب تجريبي',
-  '$2b$10$rG7N3kL5mP2qR8sT9uV0w1x2y3z4A5B6C7D8E9F0G1H2I3J4K5L6M7N8O9P0Q',
+  '$2b$10$YxBZYND4hqybDW/8a058n.tQo05i3aPX9fs0.vhrRRUf1zM38equm',
   'USER',
   'br001',
   '["dashboard.view","accounting.view","customers.view","customers.create","customers.edit","suppliers.view","treasury.view","inventory.view","inventory.create","inventory.edit","hr.view","sales.view","sales.create","sales.edit","pos.use","representatives.view","reports.view","reports.export","branches.view","currencies.view","profitability.view"]',
